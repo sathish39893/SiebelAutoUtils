@@ -3,7 +3,7 @@
 Python 3 Sample Application
 
 # Developer Workspace
-[![Contribute](http://beta.codenvy.com/factory/resources/codenvy-contribute.svg)](http://beta.codenvy.com/)
+[![Contribute](http://beta.codenvy.com/factory/resources/codenvy-contribute.svg)](http://beta.codenvy.com/f?id=jajnjj3zoznlzg54)
 
 # Stack to use
 

@@ -1,0 +1,91 @@
+{
+  "v": "4.0",
+  "name": "Python3.5",
+  "workspace": {
+    "defaultEnv": "ubuntu_python3",
+    "environments": [
+      {
+        "name": "ubuntu_python3",
+        "machineConfigs": [
+          {
+            "limits": {
+              "ram": 2000
+            },
+            "name": "ws-machine",
+            "type": "docker",
+            "source": {
+              "location": "http://beta.codenvy.com/api/recipe/recipe89hbpn3ovkwaujfa/script",
+              "type": "dockerfile"
+            },
+            "dev": true,
+            "servers": [],
+            "envVariables": {},
+            "links": []
+          }
+        ]
+      }
+    ],
+    "projects": [
+      {
+        "links": [],
+        "name": "console-python3-simple",
+        "attributes": {
+          "vcs.provider.name": [
+            "git"
+          ],
+          "git.current.branch.name": [
+            "master"
+          ],
+          "contribute_to_branch": [
+            "master"
+          ],
+          "git.repository.remotes": [
+            "https://github.com/che-samples/console-python3-simple.git"
+          ]
+        },
+        "type": "blank",
+        "source": {
+          "location": "https://github.com/che-samples/console-python3-simple.git",
+          "type": "git",
+          "parameters": {}
+        },
+        "path": "/console-python3-simple",
+        "problems": [],
+        "mixins": [
+          "pullrequest",
+          "git"
+        ]
+      }
+    ],
+    "name": "ubuntu_python3",
+    "commands": [
+      {
+        "commandLine": "cd ${current.project.path} && python main.py",
+        "name": "run",
+        "attributes": {
+          "previewUrl": ""
+        },
+        "type": "custom"
+      }
+    ],
+    "links": []
+  },
+  "ide": {
+    "onProjectsLoaded": {
+      "actions": [
+        {
+          "properties": {
+            "name": "run"
+          },
+          "id": "runCommand"
+        },
+        {
+          "properties": {
+            "file": "/console-python3-simple/main.py"
+          },
+          "id": "openFile"
+        }
+      ]
+    }
+  }
+}
