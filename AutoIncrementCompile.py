@@ -9,6 +9,7 @@ Outputs: Compilation Object to SRF File
 '''
 
 from pywinauto.application import Application
+import pywinauto.timings as pywintime
 import os,sys,time
 
 print("*"*60+"\n\n\tAuto Incremental Compilation for Siebel Tools\n\t\tversion: 1.2\n\n"+"*"*60)
@@ -63,11 +64,27 @@ def validateInputs():
 #Validate inputs provided in file
 validateInputs()
 
+if hasattr(data,'LoadTime'):
+	if data.LoadTime.upper() == 'SLOW':
+		pywintime.Timings.Slow()
+	elif data.LoadTime.upper() == 'FAST':
+		pywintime.Timings.Fast()
+	else:
+		pywintime.Timings.Defaults()
+else:
+	pywintime.Timings.Defaults()
+
 #Launch Tools
-print("%s: Siebel Tools started.."%time.strftime("%d %b %Y %H:%M:%S",time.localtime()))
-app = Application().start(ToolsPath,timeout=ToolsLaunchTimeOut)
-app = Application().connect(path=ToolsexePath)
-app[ToolsWinTitle].wait("exists enabled visible ready")
+try:
+	print("%s: Siebel Tools started.."%time.strftime("%d %b %Y %H:%M:%S",time.localtime()))
+	app = Application().start(ToolsPath,timeout=ToolsLaunchTimeOut)
+	#app = Application().connect(path=ToolsexePath)
+	app[ToolsWinTitle].wait("exists enabled visible ready")
+except pywintime.TimeoutError as e:
+	print("%s: timed out while launching Siebel Tools"%time.strftime("%d %b %Y %H:%M:%S",time.localtime()))
+	raise e
+except:
+	print("%s: error occured while launching Siebel Tools:"%time.strftime("%d %b %Y %H:%M:%S",time.localtime()))
 
 dlg = app.top_window() #dlg = app['Siebel Tools - Siebel Repository']
 dlg.type_keys("^E") # to open Object Explorer
