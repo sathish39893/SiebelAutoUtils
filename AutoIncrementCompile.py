@@ -12,9 +12,9 @@ Outputs: Compilation Objects to SRF File
 from pywinauto.application import Application
 import pywinauto.timings as pywintime
 import pywinauto.base_wrapper as basewrapper
-import os,sys,time
+import os,sys,time,re
 
-print("*"*60+"\n\n\tAuto Incremental Compilation for Siebel Tools\n\t\tversion: 1.5\n\n"+"*"*60)
+print("*"*60+"\n\n\tAuto Incremental Compilation for Siebel Tools\n\t\tversion: 1.6\n\n"+"*"*60)
 
 if len(sys.argv) < 2:
 	print("Usage: %s configfile \nexample: %s AutoIncrementCompile_params.txt"%(sys.argv[0],sys.argv[0]))
@@ -42,51 +42,126 @@ cfgPath = data.cfgPath #r'c:\Siebel\15.0.0.0.0\Tools\bin\enu\tools.cfg'
 userName = data.userName #"SPANTH"
 passWord = data.passWord #"SPANTH"
 dataSource = data.dataSource #"Local"
-srfFile = data.srfFile #r"C:\Siebel\15.0.0.0.0\Client\OBJECTS\enu\siebel_sia_auto.srf"
-objListFile = data.objListFile #r"C:\Users\sathish.panthagani\Documents\Python Scripts\SiebelObjectList.txt"
+#srfFile = data.srfFile #r"C:\Siebel\15.0.0.0.0\Client\OBJECTS\enu\siebel_sia_auto.srf"
+#objListFile = data.objListFile #r"C:\Users\sathish.panthagani\Documents\Python Scripts\SiebelObjectList.csv"
+objListFile,sifFileDir,sifImportLog,srfFile = "","","",""
 
-if hasattr(data, 'ToolsLaunchTimeOut'): 
-	ToolsLaunchTimeOut = data.ToolsLaunchTimeOut
-else:
-	ToolsLaunchTimeOut = 1000 #default if not exist in param file
+if hasattr(data,'objListFile'):objListFile = data.objListFile
+if hasattr(data,'sifFileDir'):sifFileDir = data.sifFileDir
+if hasattr(data, 'sifImportLog'):sifImportLog = data.sifImportLog
+if hasattr(data, 'srfFile'):srfFile = data.srfFile
 
-if hasattr(data, 'PopupTimeOut'):
-	PopupTimeOut =  data.PopupTimeOut
-else:
-	PopupTimeOut = 1  # default value if parameter does not exist
+if hasattr(data, 'ToolsLaunchTimeOut'): ToolsLaunchTimeOut = data.ToolsLaunchTimeOut
+else: ToolsLaunchTimeOut = 1000 #default if not exist in param file
+
+if hasattr(data, 'PopupTimeOut'): PopupTimeOut =  data.PopupTimeOut
+else: PopupTimeOut = 1  # default value if parameter does not exist
 
 ToolsPath = ToolsexePath+" /c "+cfgPath+" /u "+userName+" /p "+passWord+" /d "+dataSource
 #print(ToolsLaunchTimeOut)
 
 def validateInputs():
-	if os.path.exists(ToolsexePath) is False:
+	if ToolsexePath != "" and os.path.exists(ToolsexePath) is False:
 		print('ToolsexePath: %s does not exist'%ToolsexePath)
 		sys.exit()
-	if os.path.exists(cfgPath) is False:
+	if cfgPath != "" and os.path.exists(cfgPath) is False:
 		print('cfgPath: %s does not exists'%cfgPath)
 		sys.exit()
-	if os.path.exists(srfFile) is False:
+	if srfFile =="" and objListFile =="":
+		print("please provide either srfFile or objListFile parameter")
+		sys.exit()
+	if srfFile !="" and os.path.exists(srfFile) is False:
 		print('srfFile: %s does not exist'%srfFile)
 		sys.exit()
-	if os.path.exists(objListFile) is False:
+	if objListFile == "" and sifFileDir == "":
+		print("please provide either objListFile or sifFileDir parameter")
+		sys.exit()
+	if os.path.exists(objListFile) is False and os.path.exists(sifFileDir) is False:
 		print('objListFile: %s does not exist'%objListFile)
 		sys.exit()
-	print("%s: Validation successful"%time.strftime("%d %b %Y %H:%M:%S",time.localtime()))
+	print("%s: validation successful"%time.strftime("%d %b %Y %H:%M:%S",time.localtime()))
 
 #Validate inputs provided in file
 validateInputs()
 
 if hasattr(data,'LoadTime'):
-	if data.LoadTime.upper() == 'SLOW':
-		pywintime.Timings.Slow()
-	elif data.LoadTime.upper() == 'FAST':
-		pywintime.Timings.Fast()
-	else:
-		pywintime.Timings.Defaults()
+	if data.LoadTime.upper() == 'SLOW':	pywintime.Timings.Slow()
+	elif data.LoadTime.upper() == 'FAST': pywintime.Timings.Fast()
+	else: pywintime.Timings.Defaults()
 else:
 	pywintime.Timings.Defaults()
 
-#Launch Tools
+#-------------Import SIF files -----------------------------
+
+def importSIF(sifDir,logFile):
+	sifFileList = []
+	Objlist = []
+	Prevline = ""
+	#logFile = r"C:\Users\sathish.panthagani\Desktop\Siebel\import.log"
+	#sifDir = r'C:\Users\sathish.panthagani\Desktop\Siebel\SIF'
+	
+	if sifDir =="":return None
+	if logFile =="":logFile = sifDir+"\\sifImport.log"
+	arrFiles = os.listdir(sifDir)
+	if len(arrFiles) == 0:
+		print("%s: no SIF files found in directory:%s"%(time.strftime("%d %b %Y %H:%M:%S",time.localtime()),sifDir))
+		sys.exit()
+	
+	print("%s: SIF file import started from directory:%s, logfile:%s"%(time.strftime("%d %b %Y %H:%M:%S",time.localtime()),sifDir,logFile))
+	#Import SIF Files from the directory
+	cmd = ToolsexePath+" /c "+cfgPath+" /u "+userName+" /p "+passWord+" /d "+dataSource+" /batchimport 'Siebel Repository' merge "+sifDir+" "+logFile
+	os.system(cmd)
+	print("%s: SIF file import done."%(time.strftime("%d %b %Y %H:%M:%S",time.localtime())))
+	
+	for line in open(logFile):
+		#Importing objects from file C:\Users\sathish.panthagani\Desktop\Siebel\SIF\Object1.sif"
+		pattern2 =  "Done loading (.*?$)"
+		m2 = re.search(pattern2,line)
+		if m2 is not None:
+			sifFileName = m2.group(1)
+			sifFileList.append(sifFileName)
+			
+		#Text found in log file
+		#Loading Applet ' Contact Quota Period List Applet' ... found
+		pattern = "Loading (.*?) \'(.*)\'(.*?) ... found"
+		m = re.search(pattern,line)
+		if m is not None:
+			if m.group(1) not in ('Project','Repository'):
+				ObjType = m.group(1)
+				ObjName = m.group(2)
+				Objlist.append(ObjType+","+ObjName)
+		
+		#STATUS: Total Files: 36, Successful Imports: 33, Failed Imports: 3
+		pattern1 = "STATUS: Total Files: ([0-9]+), Successful Imports: ([0-9]+), Failed Imports: ([0-9]+)"
+		m1 = re.search(pattern1,line)
+		if m1 is not None:
+			TotalFilesCount = m1.group(1)
+			SuccessImportCount = m1.group(2)
+			FailedImportCount = m1.group(3)
+		
+		# To retrieve the project name
+		#Loading Project 'ADM Test' ... found
+		#Loading Project 'ADM Test' ... and Applet children
+		if Prevline is not None:
+			pattern3 = "Loading Project \'(.*)\' ... found"
+			pattern4 = "Loading Project \'(.*)\' ... and Applet children"
+			if re.search(pattern3,Prevline) is not None and re.search(pattern4,line) is not None:
+				m4 = re.search(pattern4,line)
+				ObjName = m4.group(1)
+				Objlist.append("Project,"+ObjName)
+		Prevline = line # reassign the new line
+	#print(sifFileList)
+	#write to a csv file
+	if Objlist is not None and objListFile != "":
+		with open(objListFile,"w") as f:
+			f.writelines("\n".join(Objlist))
+	print("%s: Object list created %s"%(time.strftime("%d %b %Y %H:%M:%S",time.localtime()),objListFile))
+
+importSIF(sifFileDir,sifImportLog)
+
+if srfFile =="": sys.exit() # not required to compile
+
+#-------------------------Launch Tools for Incremental Compile -----------------------------#
 try:
 	print("%s: Siebel Tools started.."%time.strftime("%d %b %Y %H:%M:%S",time.localtime()))
 	app = Application().start(ToolsPath,timeout=ToolsLaunchTimeOut)
