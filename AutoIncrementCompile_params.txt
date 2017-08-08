@@ -1,0 +1,17 @@
+######PARAMETER FILE for AutoIncrementCompile.exe ####
+###### varibale names should not be changed  ####
+ToolsLaunchTimeOut = 1000
+PopupTimeOut = 5
+#LoadTime = "fast"  # possible values "slow","fast"
+##----- Below values only needs to be changed ------##
+ToolsWinTitle = 'Siebel Tools - Siebel Repository'
+ToolsexePath = "C:\\Siebel\\15.0.0.0.0\\Tools\\BIN\\siebdev.exe" #executable name
+cfgPath = "C:\\Siebel\\15.0.0.0.0\\Tools\\bin\\enu\\tools.cfg" # Tools cfg location
+userName = "SPANTH"
+passWord = "SPANTH"
+dataSource = "Local"
+srfFile = "C:\\Siebel\\15.0.0.0.0\\Client\\OBJECTS\\enu\\siebel_sia_auto.srf"  # required for compile
+objListFile = "C:\\Users\\sathish.panthagani\\Documents\\Python Scripts\\AutoIncrementCompile\\SiebelObjectList.csv" # required for compile
+##------ below parameters for SIF Import-----------##
+sifFileDir = "C:\\Users\\sathish.panthagani\\Desktop\\Siebel\\SIF\Object1.sif"  # required if SIF Import needs to be done
+sifImportLog = "C:\\Users\\sathish.panthagani\\Desktop\\Siebel\\import.log" # Optional
