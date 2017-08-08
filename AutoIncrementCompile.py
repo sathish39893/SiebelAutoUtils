@@ -67,8 +67,11 @@ def validateInputs():
 	if cfgPath != "" and os.path.exists(cfgPath) is False:
 		print('cfgPath: %s does not exists'%cfgPath)
 		sys.exit()
-	if srfFile =="" and objListFile =="":
-		print("please provide either srfFile or objListFile parameter")
+	if srfFile =="" and sifFileDir == "":
+		print("please provide either srfFile or sifFileDir parameter")
+		sys.exit()
+	if (objListFile == "" or srfFile =="") and sifFileDir =="":
+		print("please provide objListFile and srfFile parameter")
 		sys.exit()
 	if srfFile !="" and os.path.exists(srfFile) is False:
 		print('srfFile: %s does not exist'%srfFile)
@@ -79,7 +82,7 @@ def validateInputs():
 	if os.path.exists(objListFile) is False and os.path.exists(sifFileDir) is False:
 		print('objListFile: %s does not exist'%objListFile)
 		sys.exit()
-	print("%s: validation successful"%time.strftime("%d %b %Y %H:%M:%S",time.localtime()))
+	print("%s: Validation of input parameters successful"%time.strftime("%d %b %Y %H:%M:%S",time.localtime()))
 
 #Validate inputs provided in file
 validateInputs()
@@ -97,17 +100,19 @@ def importSIF(sifDir,logFile):
 	sifFileList = []
 	Objlist = []
 	Prevline = ""
-	#logFile = r"C:\Users\sathish.panthagani\Desktop\Siebel\import.log"
-	#sifDir = r'C:\Users\sathish.panthagani\Desktop\Siebel\SIF'
-	
+	sDirFile = ""
 	if sifDir =="":return None
 	if logFile =="":logFile = sifDir+"\\sifImport.log"
-	arrFiles = os.listdir(sifDir)
-	if len(arrFiles) == 0:
-		print("%s: no SIF files found in directory:%s"%(time.strftime("%d %b %Y %H:%M:%S",time.localtime()),sifDir))
-		sys.exit()
+	if os.path.isdir(logFile):
+		sDirFile = "directory"
+		arrFiles = os.listdir(sifDir)
+		if len(arrFiles) == 0:
+			print("%s: no SIF files found in directory: %s"%(time.strftime("%d %b %Y %H:%M:%S",time.localtime()),sifDir))
+			sys.exit()
+	elif os.path.isfile(logFile): sDirFile = "file"
+	else: pass
 	
-	print("%s: SIF file import started from directory:%s, logfile:%s"%(time.strftime("%d %b %Y %H:%M:%S",time.localtime()),sifDir,logFile))
+	print("%s: SIF file import started from %s: %s, logfile: %s"%(time.strftime("%d %b %Y %H:%M:%S",time.localtime()),sDirFile,sifDir,logFile))
 	#Import SIF Files from the directory
 	cmd = ToolsexePath+" /c "+cfgPath+" /u "+userName+" /p "+passWord+" /d "+dataSource+" /batchimport 'Siebel Repository' merge "+sifDir+" "+logFile
 	os.system(cmd)
@@ -155,11 +160,11 @@ def importSIF(sifDir,logFile):
 	if Objlist is not None and objListFile != "":
 		with open(objListFile,"w") as f:
 			f.writelines("\n".join(Objlist))
-	print("%s: Object list created %s"%(time.strftime("%d %b %Y %H:%M:%S",time.localtime()),objListFile))
+		print("%s: Object list file created: %s"%(time.strftime("%d %b %Y %H:%M:%S",time.localtime()),objListFile))
 
 importSIF(sifFileDir,sifImportLog)
 
-if srfFile =="": sys.exit() # not required to compile
+if srfFile =="" or objListFile =="": sys.exit() # not required to compile
 
 #-------------------------Launch Tools for Incremental Compile -----------------------------#
 try:
