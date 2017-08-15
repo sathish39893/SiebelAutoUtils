@@ -9,10 +9,6 @@ Outputs: Compilation Objects to SRF File
 
 '''
 
-from pywinauto.application import Application
-import pywinauto.timings as pywintime
-import pywinauto.base_wrapper as basewrapper
-import os,sys,time,re
 import argparse,configparser
 import AutoIncrementCompile,ImportSIF,exportSIF
 
@@ -24,13 +20,13 @@ def main():
 	args = argParser.parse_args()
 
 	if args.option.lower() == "compile":
-		print("Option selected: incremental compile")
+		print("Selected option: incremental compile")
 		AutoIncrementCompile.autoCompile(args.cfgfile)
 	elif args.option.lower() == "importsif":
-		print("Option selected: import sif")
+		print("Selected option: import sif")
 		ImportSIF.importSIF(args.cfgfile)
 	elif args.option.lower() =="exportsif":
-		print("Option selected: export sif")
+		print("Selected option: export sif")
 		exportSIF.exportSIF(args.cfgfile)
 	else:
 		print("invalid option:please select options compile,importsif,exportsif")

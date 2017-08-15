@@ -62,22 +62,22 @@ def getVarFromFile(filename):
 def validateInputs():
 	global ToolsexePath,ToolsWinTitle,cfgPath,userName,passWord,dataSource,objListFile,srfFile,ToolsLaunchTimeOut,PopupTimeOut,ToolsPath
 
-	if ToolsexePath != "" and os.path.exists(ToolsexePath) is False:
+	if ToolsexePath != "" and os.path.exists(ToolsexePath.strip("\"").strip("\'")) is False:
 		print('ToolsexePath: %s does not exist'%ToolsexePath)
 		sys.exit()
-	if cfgPath != "" and os.path.exists(cfgPath) is False:
+	if cfgPath != "" and os.path.exists(cfgPath.strip("\"").strip("\'")) is False:
 		print('cfgPath: %s does not exists'%cfgPath)
 		sys.exit()
 	if srfFile =="":
 		print("srfFile parameter cannot be blank")
 		sys.exit()
-	if srfFile !="" and os.path.exists(srfFile) is False:
+	if srfFile !="" and os.path.exists(srfFile.strip("\"").strip("\'")) is False:
 		print('srfFile: %s does not exist'%srfFile)
 		sys.exit()
 	if objListFile == "":
 		print("objListFile parameter cannot be blank")
 		sys.exit()
-	if os.path.exists(objListFile) is False:
+	if os.path.exists(objListFile.strip("\"").strip("\'")) is False:
 		print('objListFile: %s does not exist'%objListFile)
 		sys.exit()
 	print("%s: Validation of input parameters successful"%time.strftime("%d %b %Y %H:%M:%S",time.localtime()))

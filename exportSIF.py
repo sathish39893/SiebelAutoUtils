@@ -19,7 +19,7 @@ def getVarFromFile(filename):
 	parser = configparser.ConfigParser(allow_no_value=True,inline_comment_prefixes=(';','#'))
 	parser.read(filename)
 	
-	ToolsexePath = parser['sifExport']['ToolsexePath'] 
+	ToolsexePath = parser.get('sifExport','ToolsexePath')
 	cfgPath = parser['sifExport']['cfgPath'] 
 	userName = parser['sifExport']['userName'] 
 	passWord = parser['sifExport']['passWord']
@@ -30,17 +30,17 @@ def getVarFromFile(filename):
 
 def validateInputs():
 	global ToolsexePath,cfgPath,userName,passWord,dataSource,sifExpObjlistFile,sifExportLog
-	if ToolsexePath != "" and os.path.exists(ToolsexePath) is False:
+	if ToolsexePath != "" and os.path.exists(ToolsexePath.strip("\"").strip("\'")) is False:
 		print('ToolsexePath: %s does not exist'%ToolsexePath)
 		sys.exit()
-	if cfgPath != "" and os.path.exists(cfgPath) is False:
+	if cfgPath != "" and os.path.exists(cfgPath.strip("\"").strip("\'")) is False:
 		print('cfgPath: %s does not exists'%cfgPath)
 		sys.exit()
 	if sifExpObjlistFile == "":
 		print("please provide sifExpObjlistFile parameter")
 		sys.exit()
-	if sifExpObjlistFile != "" and os.path.exists(sifExpObjlistFile) is False:
-		print('cfgPath: %s does not exists'%sifExpObjlistFile)
+	if sifExpObjlistFile != "" and os.path.exists(sifExpObjlistFile.strip("\"").strip("\'")) is False:
+		print('sifExpObjlistFile: %s does not exists'%sifExpObjlistFile)
 		sys.exit()
 	
 	print("%s: Validation of input parameters successful"%time.strftime("%d %b %Y %H:%M:%S",time.localtime()))
@@ -58,7 +58,7 @@ def exportSIF(configFile):
 	sifFileList = []
 	Objlist = []
 	Prevline = ""
-	for line in open(sifExportLog):
+	for line in open(sifExportLog.strip("\"").strip("\'")):
 		#Importing objects from file C:\Users\sathish.panthagani\Desktop\Siebel\SIF\Object1.sif"
 		pattern2 =  "Exporting objects to file (.*?$)"
 		m2 = re.search(pattern2,line)

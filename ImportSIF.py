@@ -35,14 +35,17 @@ def getVarFromFile(filename):
 
 def validateInputs():
 	global ToolsexePath,cfgPath,userName,passWord,dataSource,sifFileDir,sifImportLog
-	if ToolsexePath != "" and os.path.exists(ToolsexePath) is False:
+	if ToolsexePath != "" and os.path.exists(ToolsexePath.strip("\"").strip("\'")) is False:
 		print('ToolsexePath: %s does not exist'%ToolsexePath)
 		sys.exit()
-	if cfgPath != "" and os.path.exists(cfgPath) is False:
+	if cfgPath != "" and os.path.exists(cfgPath.strip("\"").strip("\'")) is False:
 		print('cfgPath: %s does not exists'%cfgPath)
 		sys.exit()
 	if sifFileDir == "":
 		print("please provide sifFileDir parameter")
+		sys.exit()
+	if sifFileDir != "" and os.path.exists(sifFileDir.strip("\"").strip("\'")) is False:
+		print('sifFileDir: %s does not exists'%sifFileDir)
 		sys.exit()
 	
 	print("%s: Validation of input parameters successful"%time.strftime("%d %b %Y %H:%M:%S",time.localtime()))
@@ -60,11 +63,11 @@ def importSIF(configFile):
 	if sifImportLog =="":sifImportLog = sifFileDir+"\\sifImport.log"
 	if os.path.isdir(sifFileDir):
 		sDirFile = "directory"
-		arrFiles = os.listdir(sifFileDir)
+		arrFiles = os.listdir(sifFileDir.strip("\"").strip("\'"))
 		if len(arrFiles) == 0:
 			print("%s: no SIF files found in directory: %s"%(time.strftime("%d %b %Y %H:%M:%S",time.localtime()),sifFileDir))
 			sys.exit()
-	elif os.path.isfile(sifImportLog): sDirFile = "file"
+	elif os.path.isfile(sifImportLog.strip("\"").strip("\'")): sDirFile = "file"
 	else: pass
 	
 	print("%s: SIF file import started from %s: %s, logfile: %s"%(time.strftime("%d %b %Y %H:%M:%S",time.localtime()),sDirFile,sifFileDir,sifImportLog))
@@ -73,7 +76,7 @@ def importSIF(configFile):
 	os.system(cmd)
 	print("%s: SIF file import done."%(time.strftime("%d %b %Y %H:%M:%S",time.localtime())))
 	
-	for line in open(sifImportLog):
+	for line in open(sifImportLog.strip("\"").strip("\'")):
 		#Importing objects from file C:\Users\sathish.panthagani\Desktop\Siebel\SIF\Object1.sif"
 		pattern2 =  "Done loading (.*?$)"
 		m2 = re.search(pattern2,line)
@@ -113,7 +116,7 @@ def importSIF(configFile):
 	#print(sifFileList)
 	#write to a csv file
 	if Objlist is not None and objListFile != "":
-		with open(objListFile,"w") as f:
+		with open(objListFile.strip("\"").strip("\'"),"w") as f:
 			f.writelines("\n".join(Objlist))
 		print("%s: Object list file created: %s"%(time.strftime("%d %b %Y %H:%M:%S",time.localtime()),objListFile))
 
