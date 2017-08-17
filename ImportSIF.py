@@ -14,24 +14,25 @@ import re
 
 #Get variable values from parameter file
 def getVarFromFile(filename):
-	global ToolsexePath,cfgPath,userName,passWord,dataSource,objListFile,sifFileDir,sifImportLog
+	global ToolsexePath,cfgPath,userName,passWord,dataSource,objListFile,sifFileDir,sifImportLog,subDirImport
 	
 	import configparser
 	parser = configparser.ConfigParser(allow_no_value=True,inline_comment_prefixes=(';','#'))
 	parser.read(filename)
 	
-	ToolsWinTitle = parser['Internal']['ToolsWinTitle'] # data.ToolsWinTitle
-	ToolsexePath = parser['sifImport']['ToolsexePath'] # data.ToolsexePath #r"C:\Siebel\15.0.0.0.0\Tools\BIN\siebdev.exe"
-	cfgPath = parser['sifImport']['cfgPath'] #data.cfgPath #r'c:\Siebel\15.0.0.0.0\Tools\bin\enu\tools.cfg'
-	userName = parser['sifImport']['userName'] #data.userName #"SPANTH"
-	passWord = parser['sifImport']['passWord']#data.passWord #"SPANTH"
-	dataSource = parser['sifImport']['dataSource'] #data.dataSource #"Local"
+	ToolsexePath = parser['sifImport']['ToolsexePath']
+	cfgPath = parser['sifImport']['cfgPath']
+	userName = parser['sifImport']['userName']
+	passWord = parser['sifImport']['passWord']
+	dataSource = parser['sifImport']['dataSource']
 
 	objListFile,sifFileDir,sifImportLog = "","",""
 
-	if parser.has_option('sifImport', 'objListFile'):objListFile = parser['sifImport']['objListFile']
-	if parser.has_option('sifImport', 'sifFileDir'):sifFileDir = parser['sifImport']['sifFileDir']
-	if parser.has_option('sifImport', 'sifImportLog'):sifImportLog = parser['sifImport']['sifImportLog']
+	if parser.has_option('sifImport', 'objListFile'):objListFile = parser.get('sifImport','objListFile')
+	if parser.has_option('sifImport', 'sifFileDir'):sifFileDir = parser.get('sifImport','sifFileDir')
+	if parser.has_option('sifImport', 'sifImportLog'):sifImportLog = parser.get('sifImport','sifImportLog')
+	if parser.has_option('sifImport', 'subDirImport'):subDirImport = parser.getboolean('sifImport','subDirImport')
+	else:subDirImport=False
 
 def validateInputs():
 	global ToolsexePath,cfgPath,userName,passWord,dataSource,sifFileDir,sifImportLog
@@ -47,34 +48,51 @@ def validateInputs():
 	if sifFileDir != "" and os.path.exists(sifFileDir.strip("\"").strip("\'")) is False:
 		print('sifFileDir: %s does not exists'%sifFileDir)
 		sys.exit()
+	if sifImportLog == "":
+		print('please provide sifImportLog parameter')
+		sys.exit()	
 	
 	print("%s: Validation of input parameters successful"%time.strftime("%d %b %Y %H:%M:%S",time.localtime()))
 
 def importSIF(configFile):
-	global ToolsexePath,cfgPath,userName,passWord,dataSource,sifFileDir,sifImportLog
-	sifFileList = []
-	Objlist = []
-	Prevline = ""
+	global ToolsexePath,cfgPath,userName,passWord,dataSource,sifFileDir,sifImportLog,subDirImport
 	sDirFile = ""
 	getVarFromFile(configFile)
 	validateInputs()
+	cmd = ToolsexePath+" /c "+cfgPath+" /u "+userName+" /p "+passWord+" /d "+dataSource+" /batchimport 'Siebel Repository' merge "+sifFileDir+" "+sifImportLog
 	
-	if sifFileDir =="":return None
-	if sifImportLog =="":sifImportLog = sifFileDir+"\\sifImport.log"
-	if os.path.isdir(sifFileDir):
+	if os.path.isdir(sifFileDir.strip("\"").strip("\'")):
 		sDirFile = "directory"
-		arrFiles = os.listdir(sifFileDir.strip("\"").strip("\'"))
+		arrFiles = [f for f in os.listdir(sifFileDir.strip("\"").strip("\'")) if f.lower().endswith('.sif')] #verify if sif files are present in directory
+		#if sifImportLog =="":sifImportLog = sifFileDir+"\\sifImport.log"
 		if len(arrFiles) == 0:
 			print("%s: no SIF files found in directory: %s"%(time.strftime("%d %b %Y %H:%M:%S",time.localtime()),sifFileDir))
 			sys.exit()
-	elif os.path.isfile(sifImportLog.strip("\"").strip("\'")): sDirFile = "file"
+		print("%s: SIF file import started from %s: %s, logfile: %s"%(time.strftime("%d %b %Y %H:%M:%S",time.localtime()),sDirFile,sifFileDir,sifImportLog))	
+		os.system(cmd)
+		parseImportLog(sifImportLog,objListFile,'false')
+		#import files from sub directory
+		if subDirImport == True:
+			for entry in os.scandir(sifFileDir.strip("\"").strip("\'")):
+				if not (entry.name.startswith('.') or entry.name.startswith('__')) and entry.is_dir():
+					sifFileDirSub = '"'+os.path.join(sifFileDir.strip("\"").strip("\'"),entry.name)+'"' # need to add quotes to make siebel tools to work
+					print("%s: SIF file import started from %s: %s, logfile: %s"%(time.strftime("%d %b %Y %H:%M:%S",time.localtime()),sDirFile,sifFileDirSub,sifImportLog))	
+					cmd = ToolsexePath+" /c "+cfgPath+" /u "+userName+" /p "+passWord+" /d "+dataSource+" /batchimport 'Siebel Repository' merge "+sifFileDirSub+" "+sifImportLog
+					os.system(cmd)
+					parseImportLog(sifImportLog,objListFile,'true')
+	elif os.path.isfile(sifFileDir.strip("\"").strip("\'")): 
+		sDirFile = "file"
+		print("%s: SIF file import started from %s: %s, logfile: %s"%(time.strftime("%d %b %Y %H:%M:%S",time.localtime()),sDirFile,sifFileDir,sifImportLog))	
+		os.system(cmd)
+		parseImportLog(sifImportLog,objListFile,'false')
 	else: pass
-	
-	print("%s: SIF file import started from %s: %s, logfile: %s"%(time.strftime("%d %b %Y %H:%M:%S",time.localtime()),sDirFile,sifFileDir,sifImportLog))
-	#Import SIF Files from the directory
-	cmd = ToolsexePath+" /c "+cfgPath+" /u "+userName+" /p "+passWord+" /d "+dataSource+" /batchimport 'Siebel Repository' merge "+sifFileDir+" "+sifImportLog
-	os.system(cmd)
 	print("%s: SIF file import done."%(time.strftime("%d %b %Y %H:%M:%S",time.localtime())))
+
+def parseImportLog(sifImportLog,objListFile,appendfile='false'):
+	sifFileList = []
+	Objlist = []
+	Prevline = ""
+	if objListFile == "": return None
 	
 	for line in open(sifImportLog.strip("\"").strip("\'")):
 		#Importing objects from file C:\Users\sathish.panthagani\Desktop\Siebel\SIF\Object1.sif"
@@ -115,11 +133,14 @@ def importSIF(configFile):
 		Prevline = line # reassign the new line
 	#print(sifFileList)
 	#write to a csv file
-	if Objlist is not None and objListFile != "":
-		with open(objListFile.strip("\"").strip("\'"),"w") as f:
+	if len(Objlist) > 0 and objListFile != "": 
+		if appendfile == 'true': filemode = "a"
+		else: filemode = "w"
+		with open(objListFile.strip("\"").strip("\'"),filemode) as f:
+			if filemode == "a": f.write("\n")
 			f.writelines("\n".join(Objlist))
-		print("%s: Object list file created: %s"%(time.strftime("%d %b %Y %H:%M:%S",time.localtime()),objListFile))
-
+		if appendfile == 'true': print("%s: Object list file updated: %s"%(time.strftime("%d %b %Y %H:%M:%S",time.localtime()),objListFile))
+		else: print("%s: Object list file created: %s"%(time.strftime("%d %b %Y %H:%M:%S",time.localtime()),objListFile))
 def main():
 	print("*"*60+"\n\n\tImport sif files to Siebel Tools\n\t\tversion: 1.0\n\n"+"*"*60)
 
