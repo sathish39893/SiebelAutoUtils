@@ -12,7 +12,7 @@ Outputs: Compilation Objects to SRF File
 from pywinauto.application import Application
 import pywinauto.timings as pywintime
 import pywinauto.base_wrapper as basewrapper
-import os,sys,time,re,imp
+import os,sys,time,re
 
 errCount = 0
 successCount = 0
@@ -31,10 +31,11 @@ def getVarFromFile(filename):
 	userName = parser['IncrCompile']['userName'] 
 	passWord = parser['IncrCompile']['passWord']
 	dataSource = parser['IncrCompile']['dataSource'] 
-	objListFile,srfFile = "",""
+	objListFile,srfFile,language = "","","enu"
 
 	if parser.has_option('IncrCompile', 'objListFile'):objListFile = parser['IncrCompile']['objListFile']
 	if parser.has_option('IncrCompile', 'srfFile'):srfFile = parser['IncrCompile']['srfFile']
+	if parser.has_option('IncrCompile', 'language'):language = parser['IncrCompile']['language']
 
 	if parser.has_option('Internal', 'ToolsLaunchTimeOut'):
 		ToolsLaunchTimeOut = parser.getint('Internal','ToolsLaunchTimeOut')
@@ -46,7 +47,7 @@ def getVarFromFile(filename):
 	else:
 		PopupTimeOut = 1  # default value if parameter does not exist
 
-	ToolsPath = ToolsexePath+" /c "+cfgPath+" /u "+userName+" /p "+passWord+" /d "+dataSource
+	ToolsPath = ToolsexePath+" /c "+cfgPath+" /u "+userName+" /p "+passWord+" /d "+dataSource+" /l "+language
 	#print(ToolsLaunchTimeOut)
 	
 	if parser.has_option('Internal', 'LoadTime'):
@@ -105,13 +106,24 @@ def launchTools():
 #####Open Object Compile Window and compile
 def compileObj(ObjType, ObjName):
 	global successCount,errCount,dlg,app,objexpl
-	
-	errMsg = ""
+	errMsg,tmpErrMsg = "",""
+
 	if ObjType == "Project":
 		app[ToolsWinTitle].type_keys("{F7}") #Opens Compilation Window
 		app['Object Compiler']['Siebel repository file:Edit'].set_edit_text(srfFile) #SRF File location
 		app['Object Compiler']['ListBox'].Select(ObjName, select=True)
 		app['Object Compiler']['Compile'].click()
+		while app['Object Compiler'].exists(1):
+			if app['Error'].exists(timeout=PopupTimeOut,retry_interval=1):
+				tmpErrMsg = app['Error']['ErrorEdit'].TextBlock()
+				app['Error']['OK'].click()
+				if(tmpErrMsg):
+					print("%s: Compilation failed: Exception occured: ObjectType: %s\tName: %s"%(time.strftime("%d %b %Y %H:%M:%S",time.localtime()),ObjType,ObjName))
+					print(tmpErrMsg)
+					errCount += 1
+					errMsg = "ERRORPOP"
+			else:
+				pass
 	else:
 		app[ToolsWinTitle].type_keys("^{F7}") #Opens Compilation Window
 		if app['Object Compiler'].exists(1):
@@ -122,23 +134,23 @@ def compileObj(ObjType, ObjName):
 				if ObjList[0] == ObjName: # verify the object name is matched
 
 					app['Object Compiler']['Compile'].click()  #Compilation Starts
-					tmpErrMsg = ""
-					if app['Error'].exists(timeout=PopupTimeOut,retry_interval=1):
-						tmpErrMsg = app['Error']['ErrorEdit'].TextBlock()
-						app['Error']['OK'].click()
-						if(tmpErrMsg):
-							print("%s: Compilation failed: Exception occured: ObjectType: %s\tName: %s"%(time.strftime("%d %b %Y %H:%M:%S",time.localtime()),ObjType,ObjName))
-							print(tmpErrMsg)
-							errCount += 1
-							errMsg = "ERRORPOP"
-					else:
-						pass
+					while app['Object Compiler'].exists():  # added not to get timeout
+						if app['Error'].exists(timeout=PopupTimeOut,retry_interval=1):
+							tmpErrMsg = app['Error']['ErrorEdit'].TextBlock()
+							app['Error']['OK'].click()
+							if(tmpErrMsg):
+								print("%s: Compilation failed: Exception occured: ObjectType: %s\tName: %s"%(time.strftime("%d %b %Y %H:%M:%S",time.localtime()),ObjType,ObjName))
+								print(tmpErrMsg)
+								errCount += 1
+								errMsg = "ERRORPOP"
+						else:
+							pass
 				else:
 					app['Object Compiler']['Cancel'].click() # cancel compile
 					errMsg = "OBJNAMEMISMATCH"
 			else:
 				errMsg = "MULTI"
-			#app['Object Compiler']['Compile'].wait_not('visible') #not required
+			#app['Object Compiler']['Compile'].wait_not('exists') #not required
 		else:
 			errMsg = "NOTFOUND"
 	return errMsg
@@ -153,7 +165,7 @@ def QuerynCompileObjects(ObjType, ObjName):
 	sTreeObjPath = '\\Siebel Objects\\'+ObjType
 	targetobj = objexpl.get_item(sTreeObjPath).click() #click on object explorer items
 	
-	app[ToolsWinTitle][sEditCtrl].wait('visible') # It will wait till the window appears
+	app[ToolsWinTitle][sEditCtrl].wait('visible exists active') # It will wait till the window appears
 	ObjNameTemp = "'"+ObjName+"'" # added quotes to avoid query errors
 	dlg.type_keys("^Q") # Query for the object Name
 
@@ -211,38 +223,33 @@ def autoCompile(configFile):
 	validateInputs()
 	#Validate inputs provided in file
 	launchTools()
-	dict = {}
+	print("%s: Compilation started..."%time.strftime("%d %b %Y %H:%M:%S",time.localtime()))
 	for line in open(objListFile):
 		linelist = line.split(",")
 		if len(linelist) < 3:
 			siebObjType = linelist[0].strip()
 			siebObjName = linelist[1].strip()
-			dict[siebObjName] = siebObjType  #adding to dictionary to remove duplicate objects
-	#print(dict.items())
-	print("%s: Compilation started..."%time.strftime("%d %b %Y %H:%M:%S",time.localtime()))
-	for key in dict:
 		try:
-			newObjType = searchObjType(dict[key])	
-			ObjName = key
+			newObjType = searchObjType(siebObjType)	
 			if newObjType is not None:
-				errorMsg = QuerynCompileObjects(newObjType,key)  #siebObjType,siebObjName
+				errorMsg = QuerynCompileObjects(newObjType,siebObjName)  #siebObjType,siebObjName
 				prevObjType = newObjType
-				prevObjName = key
+				prevObjName = siebObjName
 				if errorMsg == "":
-					print("%s: Compilation successful: ObjectType: %s\tName: %s"%(time.strftime("%d %b %Y %H:%M:%S",time.localtime()),newObjType,ObjName))
+					print("%s: Compilation successful: ObjectType: %s\tName: %s"%(time.strftime("%d %b %Y %H:%M:%S",time.localtime()),newObjType,siebObjName))
 					successCount += 1
 				elif errorMsg == "MULTI":
-					print("%s: Compilation failed: Multiple Objects found in Compile Window: ObjectType: %s\tName: %s"%(time.strftime("%d %b %Y %H:%M:%S",time.localtime()),newObjType,ObjName))
+					print("%s: Compilation failed: Multiple Objects found in Compile Window: ObjectType: %s\tName: %s"%(time.strftime("%d %b %Y %H:%M:%S",time.localtime()),newObjType,siebObjName))
 					errCount += 1
 				elif errorMsg == "NOTFOUND":
-					print("%s: Compilation failed: Object not found: ObjectType: %s\tName: %s"%(time.strftime("%d %b %Y %H:%M:%S",time.localtime()),newObjType,ObjName))
+					print("%s: Compilation failed: Object not found: ObjectType: %s\tName: %s"%(time.strftime("%d %b %Y %H:%M:%S",time.localtime()),newObjType,siebObjName))
 					errCount += 1
 				elif errorMsg == "OBJNAMEMISMATCH":
-					print("%s: Compilation failed: Object Name mismatch: ObjectType: %s\tName: %s"%(time.strftime("%d %b %Y %H:%M:%S",time.localtime()),newObjType,ObjName))
+					print("%s: Compilation failed: Object Name mismatch: ObjectType: %s\tName: %s"%(time.strftime("%d %b %Y %H:%M:%S",time.localtime()),newObjType,siebObjName))
 					errCount += 1	
 				
 			else:
-				print("%s: Compilation failed: ObjectType not supported: ObjectType: %s\tName: %s"%(time.strftime("%d %b %Y %H:%M:%S",time.localtime()),dict[key],ObjName))
+				print("%s: Compilation failed: ObjectType not supported: ObjectType: %s\tName: %s"%(time.strftime("%d %b %Y %H:%M:%S",time.localtime()),siebObjType,siebObjName))
 				errCount += 1		
 			
 		except basewrapper.ElementNotEnabled:
@@ -257,13 +264,13 @@ def autoCompile(configFile):
 			else:
 				pass
 		except pywintime.TimeoutError:
-			print("%s: Compilation failed: TimeoutError Occured: ObjectType:%s\tName:%s"%(time.strftime("%d %b %Y %H:%M:%S",time.localtime()),newObjType,ObjName))
+			print("%s: Compilation failed: TimeoutError Occured: ObjectType:%s\tName:%s"%(time.strftime("%d %b %Y %H:%M:%S",time.localtime()),newObjType,siebObjName))
 			break   # might be an issue and needs to stop execution
 		except IndexError:
-			print("%s: Compilation failed: ObjectType is not enabled in Object Explorer: ObjectType:%s\tName:%s"%(time.strftime("%d %b %Y %H:%M:%S",time.localtime()),newObjType,ObjName))
+			print("%s: Compilation failed: ObjectType is not enabled in Object Explorer: ObjectType:%s\tName:%s"%(time.strftime("%d %b %Y %H:%M:%S",time.localtime()),newObjType,siebObjName))
 			errCount += 1
 		except AttributeError:
-			print("%s: Compilation failed: first column (i.e., Name) and should be editable in Query Mode: ObjectType:%s\tName:%s"%(time.strftime("%d %b %Y %H:%M:%S",time.localtime()),newObjType,ObjName))
+			print("%s: Compilation failed: first column (i.e., Name) and should be editable in Query Mode: ObjectType:%s\tName:%s"%(time.strftime("%d %b %Y %H:%M:%S",time.localtime()),newObjType,siebObjName))
 			errCount += 1		
 
 	print("%s: Compilation done..."%time.strftime("%d %b %Y %H:%M:%S",time.localtime()))
@@ -278,10 +285,10 @@ def autoCompile(configFile):
 		print("%s: Siebel Tools closed due to exception."%time.strftime("%d %b %Y %H:%M:%S",time.localtime()))
 		raise
 def main():
-	print("*"*60+"\n\n\tAuto Incremental Compilation for Siebel Tools\n\t\tversion: 1.7\n\n"+"*"*60)
+	print("*"*60+"\n\n\tAuto Incremental Compilation for Siebel Tools\n\t\tversion: 1.8\n\n"+"*"*60)
 
 	if len(sys.argv) < 2:
-		print("Usage: %s configfile \nexample: %s AutoIncrementCompile_params.txt"%(sys.argv[0],sys.argv[0]))
+		print("Usage: %s configfile \nexample: %s configfile.ini"%(sys.argv[0],sys.argv[0]))
 		sys.exit()
 	else:
 		configFile = sys.argv[1]
