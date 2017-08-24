@@ -1,1 +1,26 @@
-Business Service,OTE AB Send SMS
+Appl,Siebel Financial Services
+Applet,AB SR Audit Trail List Applet
+Applet,OTE  Open Service Request List Applet - MWT
+Integration Object,OTE File Integration - Master List IO
+IO,SearchEquipment
+Business Component,OTE ATG Asset Mgmt - Asset
+BC,ABO Bulk Request Action Set Template.Sequence (Sequence)
+Business Object,OTE Account/Address-Intersection
+Business Service,OTE CSA Workflow Process Manager (Server Request)
+Class,CSSADMService
+Command,OTE Create Export Job
+EIM Interface Table,EIM_ACCNT_DTL
+Link,OTE ATG Back Office Service Request BC/OTE ATG Fixed Order BC
+Pick List,OTE Report SR Additional Option2(Div) Picklist
+Project,OTE Address
+Screen,OTE Call Barring - Call Diversion Log
+Table,CX_COMPLAINT_X
+Toolbar,Personalization
+Import Object,EAI Lookup Map
+View,OTE CommSrv CM Agent General Profile/Configuration View (eValue)
+Web Page,CC Login Page (Login Only)
+Web Template,OTE View Detail (Show Shopping Cart) - Customize View
+Workflow Policy Column,OTE Order XA Char_Val
+Workflow Policy Object,Campaign
+Workflow Policy Program,Change SR Owner to Manager
+Workflow,ABO Bulk Request - Cancel Process Workflow
