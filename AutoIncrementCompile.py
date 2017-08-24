@@ -48,7 +48,6 @@ def getVarFromFile(filename):
 		PopupTimeOut = 1  # default value if parameter does not exist
 
 	ToolsPath = ToolsexePath+" /c "+cfgPath+" /u "+userName+" /p "+passWord+" /d "+dataSource+" /l "+language
-	#print(ToolsLaunchTimeOut)
 	
 	if parser.has_option('Internal', 'LoadTime'):
 		if parser.get('Internal', 'LoadTime').upper() == 'SLOW': pywintime.Timings.Slow()
@@ -114,16 +113,9 @@ def compileObj(ObjType, ObjName):
 		app['Object Compiler']['ListBox'].Select(ObjName, select=True)
 		app['Object Compiler']['Compile'].click()
 		while app['Object Compiler'].exists(1):
-			if app['Error'].exists(timeout=PopupTimeOut,retry_interval=1):
-				tmpErrMsg = app['Error']['ErrorEdit'].TextBlock()
-				app['Error']['OK'].click()
-				if(tmpErrMsg):
-					print("%s: Compilation failed: Exception occured: ObjectType: %s\tName: %s"%(time.strftime("%d %b %Y %H:%M:%S",time.localtime()),ObjType,ObjName))
-					print(tmpErrMsg)
-					errCount += 1
-					errMsg = "ERRORPOP"
-			else:
-				pass
+			try:
+				if app['Object Compiler']['Compile'].IsEnabled():	app['Object Compiler']['Compile'].click()
+			except:	pass
 	else:
 		app[ToolsWinTitle].type_keys("^{F7}") #Opens Compilation Window
 		if app['Object Compiler'].exists(1):
@@ -132,19 +124,11 @@ def compileObj(ObjType, ObjName):
 			if ObjCount == 1:
 				ObjList = app['Object Compiler']['ListBox'].item_texts()
 				if ObjList[0] == ObjName: # verify the object name is matched
-
 					app['Object Compiler']['Compile'].click()  #Compilation Starts
-					while app['Object Compiler'].exists():  # added not to get timeout
-						if app['Error'].exists(timeout=PopupTimeOut,retry_interval=1):
-							tmpErrMsg = app['Error']['ErrorEdit'].TextBlock()
-							app['Error']['OK'].click()
-							if(tmpErrMsg):
-								print("%s: Compilation failed: Exception occured: ObjectType: %s\tName: %s"%(time.strftime("%d %b %Y %H:%M:%S",time.localtime()),ObjType,ObjName))
-								print(tmpErrMsg)
-								errCount += 1
-								errMsg = "ERRORPOP"
-						else:
-							pass
+					while app['Object Compiler'].exists(1):  # added not to get timeout
+						try:
+							if app['Object Compiler']['Compile'].IsEnabled():	app['Object Compiler']['Compile'].click()
+						except:	pass
 				else:
 					app['Object Compiler']['Cancel'].click() # cancel compile
 					errMsg = "OBJNAMEMISMATCH"
@@ -153,6 +137,7 @@ def compileObj(ObjType, ObjName):
 			#app['Object Compiler']['Compile'].wait_not('exists') #not required
 		else:
 			errMsg = "NOTFOUND"
+
 	return errMsg
 
 ######Query for the compile Objects
@@ -160,11 +145,8 @@ def QuerynCompileObjects(ObjType, ObjName):
 	global successCount,errCount,dlg,app,objexpl
 	
 	sEditCtrl = "~"+ObjType+"sEdit" #Object Plural Form is used for this window
-	#sEditCtrl = ObjType+"sEdit" #Object Plural Form is used for this window
-	#print(sEditCtrl)
 	sTreeObjPath = '\\Siebel Objects\\'+ObjType
 	targetobj = objexpl.get_item(sTreeObjPath).click() #click on object explorer items
-	
 	app[ToolsWinTitle][sEditCtrl].wait('visible exists active') # It will wait till the window appears
 	ObjNameTemp = "'"+ObjName+"'" # added quotes to avoid query errors
 	dlg.type_keys("^Q") # Query for the object Name
@@ -174,9 +156,8 @@ def QuerynCompileObjects(ObjType, ObjName):
 
 	#dlg.type_keys("+{VK_DOWN 2}")
 	return compileObj(ObjType, ObjName) # Compiles Object
-#########	
 
-
+#########
 def searchObjType(searchFor):
 	#added below to avoid typo errors
 	ObjectList = {	'Bitmap Category':['BITMAP CATEGORY','BITMAP'],
@@ -233,8 +214,29 @@ def autoCompile(configFile):
 			newObjType = searchObjType(siebObjType)	
 			if newObjType is not None:
 				errorMsg = QuerynCompileObjects(newObjType,siebObjName)  #siebObjType,siebObjName
-				prevObjType = newObjType
-				prevObjName = siebObjName
+				tmpErrMsg = ""
+				if newObjType == "Project": PopupTimeOutTemp = PopupTimeOut*3
+				else: PopupTimeOutTemp = PopupTimeOut
+				
+				while app['Object Compiler'].exists(1):
+					if app['Error'].exists(timeout=PopupTimeOutTemp,retry_interval=1):
+						tmpErrMsg = app['Error']['ErrorEdit'].TextBlock()
+						app['Error']['OK'].click()
+						if(tmpErrMsg):
+							print("%s: Compilation failed: Compile Error: ObjectType: %s\tName: %s"%(time.strftime("%d %b %Y %H:%M:%S",time.localtime()),newObjType,siebObjName))
+							print(tmpErrMsg)
+							errCount += 1
+							errorMsg = "ERRORPOP"
+				else:
+					if app['Error'].exists(timeout=PopupTimeOutTemp,retry_interval=1):
+						tmpErrMsg = app['Error']['ErrorEdit'].TextBlock()
+						app['Error']['OK'].click()
+						if(tmpErrMsg):
+							print("%s: Compilation failed: Compile Error: ObjectType: %s\tName: %s"%(time.strftime("%d %b %Y %H:%M:%S",time.localtime()),newObjType,siebObjName))
+							print(tmpErrMsg)
+							errCount += 1
+							errorMsg = "ERRORPOP"
+			
 				if errorMsg == "":
 					print("%s: Compilation successful: ObjectType: %s\tName: %s"%(time.strftime("%d %b %Y %H:%M:%S",time.localtime()),newObjType,siebObjName))
 					successCount += 1
@@ -253,7 +255,7 @@ def autoCompile(configFile):
 				errCount += 1		
 			
 		except basewrapper.ElementNotEnabled:
-			print("%s: Compilation failed: Exception Occured: ObjectType:%s\tName:%s"%(time.strftime("%d %b %Y %H:%M:%S",time.localtime()),prevObjType,prevObjName))
+			print("%s: Compilation failed: Exception Occured: ObjectType:%s\tName:%s"%(time.strftime("%d %b %Y %H:%M:%S",time.localtime()),siebObjType,siebObjName))
 			errCount += 1
 			tmpErrMsg = ""
 			if app['Error'].exists(timeout=PopupTimeOut,retry_interval=1):
@@ -285,7 +287,7 @@ def autoCompile(configFile):
 		print("%s: Siebel Tools closed due to exception."%time.strftime("%d %b %Y %H:%M:%S",time.localtime()))
 		raise
 def main():
-	print("*"*60+"\n\n\tAuto Incremental Compilation for Siebel Tools\n\t\tversion: 1.8\n\n"+"*"*60)
+	print("*"*60+"\n\n\tAuto Incremental Compilation for Siebel Tools\n\t\tversion: 1.9\n\n"+"*"*60)
 
 	if len(sys.argv) < 2:
 		print("Usage: %s configfile \nexample: %s configfile.ini"%(sys.argv[0],sys.argv[0]))
