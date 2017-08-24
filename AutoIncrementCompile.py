@@ -215,11 +215,11 @@ def autoCompile(configFile):
 			if newObjType is not None:
 				errorMsg = QuerynCompileObjects(newObjType,siebObjName)  #siebObjType,siebObjName
 				tmpErrMsg = ""
-				if newObjType == "Project": PopupTimeOutTemp = PopupTimeOut*3
-				else: PopupTimeOutTemp = PopupTimeOut
+				#if newObjType == "Project": PopupTimeOutTemp = PopupTimeOut*3
+				#else: PopupTimeOutTemp = PopupTimeOut
 				
 				while app['Object Compiler'].exists(1):
-					if app['Error'].exists(timeout=PopupTimeOutTemp,retry_interval=1):
+					if app['Error'].exists(timeout=PopupTimeOut,retry_interval=1):
 						tmpErrMsg = app['Error']['ErrorEdit'].TextBlock()
 						app['Error']['OK'].click()
 						if(tmpErrMsg):
@@ -228,7 +228,7 @@ def autoCompile(configFile):
 							errCount += 1
 							errorMsg = "ERRORPOP"
 				else:
-					if app['Error'].exists(timeout=PopupTimeOutTemp,retry_interval=1):
+					if app['Error'].exists(timeout=PopupTimeOut,retry_interval=1):
 						tmpErrMsg = app['Error']['ErrorEdit'].TextBlock()
 						app['Error']['OK'].click()
 						if(tmpErrMsg):
