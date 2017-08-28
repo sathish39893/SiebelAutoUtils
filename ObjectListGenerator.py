@@ -5,7 +5,21 @@ def validateInputs(filename):
 		print('filename: %s does not exists'%filename)
 		sys.exit()
 
-def searchObjType(searchFor):
+def getRepoNonRepoType(ObjType):
+	ObjTypeList ={'SRF':['Bitmap Category','Business Component','Business Object','Business Service','Class','Find','HTML Heirarchy Bitmap','Help Id','Icon Map','Integration Object',
+						'Application','Applet','Link','Menu','Message Category','Pick List','Project','Screen','Symbolic String','Table','Task Group','Toolbar','View','Web Page',
+						'Import Object'],
+				'Non-SRF':['List Of Values','Web Service','Data Map']
+				}
+	for k in ObjTypeList:
+		if k == ObjType:
+			return k
+		else:
+			for v in ObjTypeList[k]:
+				if ObjType == v:
+					return k
+	return None
+def getObjType(searchFor):
 	#added below to avoid typo errors
 	ObjectList = {	'Bitmap Category':["BITMAP CATEGORY","BITMAP"],
 				'Business Component':['BUSINESS COMPONENT','BC', 'BUSCOMP'],
@@ -30,13 +44,12 @@ def searchObjType(searchFor):
 				'Table':['TABLE'],
 				'Task Group':['TASK GROUP'],
 				'Toolbar':['TOOLBAR'],
-				'Type':['TYPE'],
 				'View':['VIEW'],
 				'Web Page':['WEB PAGE'],
 				'Web Template':['WEB TEMPLATE','WEB TEMPL','WEBTEMPL'],
 				'Import Object':['IMPORT OBJECT'],
 				# non - repository
-				'List Of Values':['LOV''LOVS','DESCRIPTION','VALUE'],
+				'List Of Values':['LOV''LOVS','DESCRIPTION','VALUE','TYPE'],
 				'Web Service':['WS','WEBSERVICE','INBOUND WS','OUTBOUND WS'],
 				'Data Map':['DATAMAP','DATA MAP']
 			}
@@ -56,32 +69,40 @@ def findColumn(element,findToList):
 		return None
 		
 def createObjListFile(filename,rowTowrite):
-	with open(filename+"_ObjectList.csv", 'w',newline='',encoding="utf-16") as ObjListFile:
-		ObjListWriter = csv.writer(ObjListFile, delimiter='\t', quotechar='"', quoting=csv.QUOTE_ALL) #QUOTE_MINIMAL
-		for row in rowTowrite:
-			ObjListWriter.writerow(row)
-	print("Object List file '%s' generated."%filename)
-	#with open('eggs.csv', 'w+') as csvfile:
-	#	spamwriter = csv.writer(csvfile, delimiter=' ',quotechar='|', quoting=csv.QUOTE_MINIMAL)
-	#	spamwriter.writerow(['Spam'] * 5 + ['Baked Beans'])
-	#	spamwriter.writerow(['Spam', 'Lovely Spam', 'Wonderful Spam'])
+	try:
+		with open(filename+"_ObjectList.csv", 'w',newline='',encoding="utf-16") as ObjListFile:
+			print("Started generating Object List file '%s'."%filename)
+			headerList = ['Id','Defect Type','Project','Owner','Object Type','Object Name','SRF/Non-SRF']
+			ObjListWriter = csv.writer(ObjListFile, delimiter='\t', quotechar='"', quoting=csv.QUOTE_ALL) #QUOTE_MINIMAL
+			ObjListWriter.writerow(headerList)
+			for row in rowTowrite:
+				ObjListWriter.writerow(row)
+		print("Object List file '%s' generated."%filename)
+	except:
+		print("failed to generate Object List file '%s'."%filename)
+		raise
 	
 def parseObjList(filename):
 	
 	with open(filename,encoding="utf-16") as csvfile:
 		adtreader = csv.reader(csvfile,dialect="excel",delimiter='\t',quotechar='"')
-		IdColumn,ObjListColumn = "",""
-		rownum =0
+		IdColumn,ObjListColumn,defectType,projectName,ownerName = "","","","",""
 		ObjListofList = []
 		Objlist = []
-		for row in adtreader:
+		for rownum,row in enumerate(adtreader):
 			if rownum == 0: 
 				IdColumn = findColumn("Id",row)
 				ObjListColumn = findColumn("Resolution ADT",row)
+				defectTypeColumn = findColumn("Defect Type",row)
+				projectNameColumn = findColumn("Custom 2_ Defect",row)
+				ownerNameColumn = findColumn("Owned By",row)
+				
 				#print(IdColumn,ObjListColumn)
-			rownum +=1
 			objList = row[ObjListColumn]
 			adtNum = row[IdColumn]
+			defectType = row[defectTypeColumn]
+			projectName = row[projectNameColumn]
+			ownerName = row[ownerNameColumn]
 			if adtNum != "" and objList !="":
 				objListArr = objList.split("\n")
 				for line in objListArr:
@@ -92,18 +113,23 @@ def parseObjList(filename):
 							objTypelist = str(m.group(1).strip()).split(" ")
 							objName = str(m.group(2).strip())
 							for objType in objTypelist:
-								newObjType = searchObjType(objType)
+								newObjType = getObjType(objType)
 								if newObjType is not None:
 									Objlist = []
+									srfObjType = getRepoNonRepoType(newObjType)
 									Objlist.append(adtNum)
+									Objlist.append(defectType)
+									Objlist.append(projectName)
+									Objlist.append(ownerName)
 									Objlist.append(newObjType)
-									Objlist.append(objName)							
-			ObjListofList.append(Objlist)
+									Objlist.append(objName)
+									Objlist.append(srfObjType)
+									ObjListofList.append(Objlist)
 		#print(ObjListofList)
 		#for objrow in ObjListofList:
 		createObjListFile(filename,ObjListofList)
 def main():
-	print("*"*60+"\n\n\tObjects List Generator for ADT list\n\t\tversion: 1.0\n\n"+"*"*60)
+	print("*"*60+"\n\n\tObjects List Generator for ADT list\n\t\tversion: 0.2\n\n"+"*"*60)
 
 	if len(sys.argv) < 2:
 		print("Usage: %s adtlistfile.csv \nexample: %s adtlistfile.csv"%(sys.argv[0],sys.argv[0]))
