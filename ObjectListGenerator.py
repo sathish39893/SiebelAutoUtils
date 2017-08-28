@@ -9,7 +9,7 @@ def getRepoNonRepoType(ObjType):
 	ObjTypeList ={'SRF':['Bitmap Category','Business Component','Business Object','Business Service','Class','Find','HTML Heirarchy Bitmap','Help Id','Icon Map','Integration Object',
 						'Application','Applet','Link','Menu','Message Category','Pick List','Project','Screen','Symbolic String','Table','Task Group','Toolbar','View','Web Page',
 						'Import Object'],
-				'Non-SRF':['List Of Values','Web Service','Data Map']
+				'Non-SRF':['List Of Values','Web Service','EAI DataMap','Application DataMap','Workflow','Workflow Policy','SWT Files','JS Files','CSS Files']
 				}
 	for k in ObjTypeList:
 		if k == ObjType:
@@ -51,7 +51,13 @@ def getObjType(searchFor):
 				# non - repository
 				'List Of Values':['LOV''LOVS','DESCRIPTION','VALUE','TYPE'],
 				'Web Service':['WS','WEBSERVICE','INBOUND WS','OUTBOUND WS'],
-				'Data Map':['DATAMAP','DATA MAP']
+				'EAI DataMap':['DATAMAP','DATA MAP'],
+				'Application DataMap':['APPLICATION DATAMAP','APPLICATION DATA MAP'],
+				'Workflow':['WF','WORKFLOW'],
+				'Workflow Policy':['WF POLICY','WORKFLOW POLICY'],
+				'SWT Files':['SWT','SWT FILES'],
+				'JS Files':['JS FILES','JAVASCRIPT FILES','JAVA SCRIPT FILES'],
+				'CSS Files':['CSS FILES','CSS']
 			}
 	for k in ObjectList:
 		if k == searchFor:
@@ -70,25 +76,26 @@ def findColumn(element,findToList):
 		
 def createObjListFile(filename,rowTowrite):
 	try:
-		with open(filename+"_ObjectList.csv", 'w',newline='',encoding="utf-16") as ObjListFile:
-			print("Started generating Object List file '%s'."%filename)
-			headerList = ['Id','Defect Type','Project','Owner','Object Type','Object Name','SRF/Non-SRF']
+		ObjListFileName = str(filename+"_ObjectList.csv")
+		with open(ObjListFileName, 'w',newline='',encoding="utf-16") as ObjListFile:
+			print("Started generating Object List file '%s'."%ObjListFileName)
+			headerList = ['Id','Defect Type','Project','Owner','Object Type','Object Name','SRF/Non-SRF','Owning Team']
 			ObjListWriter = csv.writer(ObjListFile, delimiter='\t', quotechar='"', quoting=csv.QUOTE_ALL) #QUOTE_MINIMAL
 			ObjListWriter.writerow(headerList)
 			for row in rowTowrite:
 				ObjListWriter.writerow(row)
-		print("Object List file '%s' generated."%filename)
+		print("Object List file '%s' generated."%ObjListFileName)
 	except:
-		print("failed to generate Object List file '%s'."%filename)
+		print("failed to generate Object List file '%s'."%ObjListFileName)
 		raise
 	
 def parseObjList(filename):
 	
 	with open(filename,encoding="utf-16") as csvfile:
 		adtreader = csv.reader(csvfile,dialect="excel",delimiter='\t',quotechar='"')
-		IdColumn,ObjListColumn,defectType,projectName,ownerName = "","","","",""
+		IdColumn,ObjListColumn,defectType,projectName,ownerName,ownerTeam = "","","","","",""
 		ObjListofList = []
-		Objlist = []
+		objList = []
 		for rownum,row in enumerate(adtreader):
 			if rownum == 0: 
 				IdColumn = findColumn("Id",row)
@@ -96,40 +103,58 @@ def parseObjList(filename):
 				defectTypeColumn = findColumn("Defect Type",row)
 				projectNameColumn = findColumn("Custom 2_ Defect",row)
 				ownerNameColumn = findColumn("Owned By",row)
+				ownerTeamColumn = findColumn('Custom 3_ Defect',row)
 				
 				#print(IdColumn,ObjListColumn)
-			objList = row[ObjListColumn]
+			adtObjList = row[ObjListColumn]
 			adtNum = row[IdColumn]
-			defectType = row[defectTypeColumn]
+			if defectTypeColumn is not None: defectType = row[defectTypeColumn]
 			projectName = row[projectNameColumn]
-			ownerName = row[ownerNameColumn]
-			if adtNum != "" and objList !="":
-				objListArr = objList.split("\n")
+			if ownerNameColumn is not None: ownerName = row[ownerNameColumn]
+			if ownerTeamColumn is not None: ownerTeam = row[ownerTeamColumn]
+			
+			if adtNum != "" and adtObjList !="":
+				objListArr = adtObjList.split("\n")
 				for line in objListArr:
 					if line !="":
 						pattern = "(.*?\s*):(\s*.*?$)"    ## pattern used for matching
 						m = re.search(pattern,line)
 						if m is not None:
 							objTypelist = str(m.group(1).strip()).split(" ")
-							objName = str(m.group(2).strip())
+							objNamelist = str(m.group(2).strip()).split("->")
+							objName = objNamelist[0].strip("-")
 							for objType in objTypelist:
 								newObjType = getObjType(objType)
+								objList = []
 								if newObjType is not None:
-									Objlist = []
 									srfObjType = getRepoNonRepoType(newObjType)
-									Objlist.append(adtNum)
-									Objlist.append(defectType)
-									Objlist.append(projectName)
-									Objlist.append(ownerName)
-									Objlist.append(newObjType)
-									Objlist.append(objName)
-									Objlist.append(srfObjType)
-									ObjListofList.append(Objlist)
+									if newObjType == "Workflow":objName = str(objName.split(":")[0].strip(""))
+									objList.append(adtNum)
+									objList.append(defectType)
+									objList.append(projectName)
+									objList.append(ownerName)
+									objList.append(newObjType)
+									objList.append(objName)
+									objList.append(srfObjType)
+									objList.append(ownerTeam)
+									ObjListofList.append(objList)
+			elif adtObjList == "":
+				objList = []
+				objList.append(adtNum)
+				objList.append(defectType)
+				objList.append(projectName)
+				objList.append(ownerName)
+				objList.append("None")#newObjType
+				objList.append("None")#objName
+				objList.append("None")#srfObjType
+				objList.append(ownerTeam)
+				ObjListofList.append(objList)
 		#print(ObjListofList)
 		#for objrow in ObjListofList:
+		print("Total number of ADTs scanned:%i"%(rownum))
 		createObjListFile(filename,ObjListofList)
 def main():
-	print("*"*60+"\n\n\tObjects List Generator for ADT list\n\t\tversion: 0.2\n\n"+"*"*60)
+	print("*"*60+"\n\n\tObjects List Generator for ADT list\n\t\tversion: 0.3\n\n"+"*"*60)
 
 	if len(sys.argv) < 2:
 		print("Usage: %s adtlistfile.csv \nexample: %s adtlistfile.csv"%(sys.argv[0],sys.argv[0]))
