@@ -51,14 +51,15 @@ def getObjType(searchFor):
 				# non - repository
 				'List Of Values':['LOV''LOVS','DESCRIPTION','VALUE','TYPE'],
 				'Web Service':['WS','WEBSERVICE','INBOUND WS','OUTBOUND WS'],
-				'EAI DataMap':['DATAMAP','DATA MAP'],
+				'EAI DataMap':['DATAMAP','DATA MAP','DM','DATA'],
 				'Application DataMap':['APPLICATION DATAMAP','APPLICATION DATA MAP'],
 				'Workflow':['WF','WORKFLOW'],
 				'Workflow Policy':['WF POLICY','WORKFLOW POLICY'],
 				'SWT Files':['SWT','SWT FILES'],
-				'JS Files':['JS FILES','JAVASCRIPT FILES','JAVA SCRIPT FILES'],
+				'JS Files':['JS FILES','JAVASCRIPT FILES','JAVA SCRIPT FILES','JS'],
 				'CSS Files':['CSS FILES','CSS']
 			}
+	searchFor = re.sub(r'[^a-zA-Z]','',searchFor)
 	for k in ObjectList:
 		if k == searchFor:
 			return k
@@ -78,7 +79,6 @@ def createObjListFile(filename,rowTowrite):
 	try:
 		ObjListFileName = str(filename+"_ObjectList.csv")
 		with open(ObjListFileName, 'w',newline='',encoding="utf-16") as ObjListFile:
-			print("Started generating Object List file '%s'."%ObjListFileName)
 			headerList = ['Id','Defect Type','Project','Owner','Object Type','Object Name','SRF/Non-SRF','Owning Team']
 			ObjListWriter = csv.writer(ObjListFile, delimiter='\t', quotechar='"', quoting=csv.QUOTE_ALL) #QUOTE_MINIMAL
 			ObjListWriter.writerow(headerList)
@@ -121,12 +121,14 @@ def parseObjList(filename):
 						m = re.search(pattern,line)
 						if m is not None:
 							objTypelist = str(m.group(1).strip()).split(" ")
-							objNamelist = str(m.group(2).strip()).split("->")
-							objName = objNamelist[0].strip("-")
+							objNamelist = str(m.group(2).strip()).split(":")
+							objName = objNamelist[0].strip()
 							for objType in objTypelist:
+								objType = objType.strip()
+								if objType == "": continue
 								newObjType = getObjType(objType)
 								objList = []
-								if newObjType is not None:
+								if newObjType is not None and objName !="":
 									srfObjType = getRepoNonRepoType(newObjType)
 									if newObjType == "Workflow":objName = str(objName.split(":")[0].strip(""))
 									objList.append(adtNum)
@@ -137,7 +139,8 @@ def parseObjList(filename):
 									objList.append(objName)
 									objList.append(srfObjType)
 									objList.append(ownerTeam)
-									ObjListofList.append(objList)
+									ObjListofList.append(objList)								
+									
 			elif adtObjList == "":
 				objList = []
 				objList.append(adtNum)
@@ -154,7 +157,7 @@ def parseObjList(filename):
 		print("Total number of ADTs scanned:%i"%(rownum))
 		createObjListFile(filename,ObjListofList)
 def main():
-	print("*"*60+"\n\n\tObjects List Generator for ADT list\n\t\tversion: 0.3\n\n"+"*"*60)
+	print("*"*60+"\n\n\tObjects List Generator for ADT list\n\t\tversion: 0.4\n\n"+"*"*60)
 
 	if len(sys.argv) < 2:
 		print("Usage: %s adtlistfile.csv \nexample: %s adtlistfile.csv"%(sys.argv[0],sys.argv[0]))
