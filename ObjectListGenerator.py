@@ -20,7 +20,7 @@ def getRepoNonRepoType(ObjType):
 	ObjTypeList ={'SRF':['Bitmap Category','Business Component','Business Object','Business Service','Class','Find','HTML Heirarchy Bitmap','Help Id','Icon Map','Integration Object',
 						'Application','Applet','Link','Menu','Message Category','Pick List','Project','Screen','Symbolic String','Table','Task Group','Toolbar','View','Web Page',
 						'Import Object'],
-				'Non-SRF':['List Of Values','Web Service','EAI DataMap','Application DataMap','Workflow','Workflow Policy','SWT Files','JS Files','CSS Files']
+				'Non-SRF':['List Of Values','Web Service','EAI DataMap','Application DataMap','Workflow','Workflow Policy','SWT Files','JS Files','CSS Files','Attribute Definition','Product Definition']
 				}
 	for k in ObjTypeList:
 		if k == ObjType:
@@ -82,7 +82,9 @@ def getObjType(searchFor):
 				'Workflow Policy':['WF POLICY','WORKFLOW POLICY'],
 				'SWT Files':['SWT','SWT FILES'],
 				'JS Files':['JS FILES','JAVASCRIPT FILES','JAVA SCRIPT FILES','JS'],
-				'CSS Files':['CSS FILES','CSS']
+				'CSS Files':['CSS FILES','CSS'],
+				'Attribute Definition':['ATTRIBUTE DEFINITION','ATTRIBUTE'],
+				'Product Definition':['PRODUCT DEFINITION','PRODUCT']
 			}
 	searchFor = re.sub(r'[^a-zA-Z]','',searchFor)
 	for k in ObjectList:
@@ -122,6 +124,8 @@ def parseObjList(filename):
 		ObjListofList = []
 		objList = []
 		for rownum,row in enumerate(adtreader):
+			matchFound = "false"
+			
 			if rownum == 0: 
 				IdColumn = findColumn("Id",row)
 				ObjListColumn = findColumn("Resolution ADT",row)
@@ -138,7 +142,7 @@ def parseObjList(filename):
 			if ownerNameColumn is not None: ownerName = row[ownerNameColumn]
 			if ownerTeamColumn is not None: ownerTeam = row[ownerTeamColumn]
 			
-			if adtNum != "" and adtObjList !="":
+			if adtNum != "" and adtObjList !="" and rownum > 0:
 				objListArr = adtObjList.split("\n")
 				for line in objListArr:
 					if line !="":
@@ -156,6 +160,8 @@ def parseObjList(filename):
 								##if adtNum == "8376":print(newObjType)
 								objList = []
 								if newObjType is not None and objName !="":
+									matchFound = "true"
+									#print(matchFound,rownum)
 									srfObjType = getRepoNonRepoType(newObjType)
 									newobjUpdInfo = getModifiedInfo(objUpdInfo)
 									if newObjType == "Workflow":objName = str(objName.split(":")[0].strip())
@@ -168,8 +174,21 @@ def parseObjList(filename):
 									objList.append(srfObjType)
 									objList.append(newobjUpdInfo)
 									objList.append(ownerTeam)
-									ObjListofList.append(objList)								
-			elif adtObjList == "":
+									ObjListofList.append(objList)
+				if matchFound=="false" and rownum > 0:
+					objList = []
+					objList.append(adtNum)
+					objList.append(defectType)
+					objList.append(projectName)
+					objList.append(ownerName)
+					objList.append("NoMatch")#newObjType
+					objList.append("NoMatch") #objName
+					objList.append("") #srfObjType
+					objList.append("") #newobjUpdInfo
+					objList.append(ownerTeam)
+					ObjListofList.append(objList)
+
+			elif adtObjList == "" and rownum > 0:
 				objList = []
 				objList.append(adtNum)
 				objList.append(defectType)
@@ -181,12 +200,11 @@ def parseObjList(filename):
 				objList.append("") #newobjUpdInfo
 				objList.append(ownerTeam)
 				ObjListofList.append(objList)
-		#print(ObjListofList)
-		#for objrow in ObjListofList:
+
 		print("Total number of ADTs scanned:%i"%(rownum))
 		createObjListFile(filename,ObjListofList)
 def main():
-	print("*"*60+"\n\n\tObjects List Generator for ADT list\n\t\tversion: 0.5\n\n"+"*"*60)
+	print("*"*60+"\n\n\tObjects List Generator for ADT list\n\t\tversion: 0.6\n\n"+"*"*60)
 
 	if len(sys.argv) < 2:
 		print("Usage: %s adtlistfile.csv \nexample: %s adtlistfile.csv"%(sys.argv[0],sys.argv[0]))
