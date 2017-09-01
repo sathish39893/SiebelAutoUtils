@@ -135,8 +135,8 @@ def parseObjList(filename):
 				ownerTeamColumn = findColumn('Custom 3_ Defect',row)
 				
 				#print(IdColumn,ObjListColumn)
-			adtObjList = row[ObjListColumn]
-			adtNum = row[IdColumn]
+			adtObjList = row[ObjListColumn].strip()
+			adtNum = row[IdColumn].strip()
 			if defectTypeColumn is not None: defectType = row[defectTypeColumn]
 			projectName = row[projectNameColumn]
 			if ownerNameColumn is not None: ownerName = row[ownerNameColumn]
