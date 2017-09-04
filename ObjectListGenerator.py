@@ -106,7 +106,7 @@ def createObjListFile(filename,rowTowrite):
 	try:
 		ObjListFileName = str(filename+"_ObjectList.csv")
 		with open(ObjListFileName, 'w',newline='',encoding="utf-16") as ObjListFile:
-			headerList = ['Id','Defect Type','Project','Owner','Object Type','Object Name','SRF/Non-SRF','New/Modified','Owning Team']
+			headerList = ['Id','Defect Type','Project','Owner','Object Type','Object Name','SRF/Non-SRF','SIT','UAT','New/Modified','Owning Team']
 			ObjListWriter = csv.writer(ObjListFile, delimiter='\t', quotechar='"', quoting=csv.QUOTE_ALL) #QUOTE_MINIMAL
 			ObjListWriter.writerow(headerList)
 			for row in rowTowrite:
@@ -174,7 +174,16 @@ def parseObjList(filename):
 									#print(matchFound,counter,objType,newObjType)
 									srfObjType = getRepoNonRepoType(newObjType)
 									newobjUpdInfo = getModifiedInfo(objUpdInfo)
-									if newObjType == "Workflow":objName = str(objName.split(":")[0].strip())
+									sitVer,uatVer = "",""
+									if newObjType == "Workflow":
+										objName = str(objName.split(":")[0].strip())
+										pattern1 = "\((.*?)([0-9?]{1,2})\).*?"    #pattern1 = "(.*?)\((.*?)\).*?\((.*?)\).*"
+										findList = re.findall(pattern1,objName)
+										for m1 in findList:
+											if m1 is not None:
+												if str(m1[0]).upper().startswith("SIT"): sitVer = str(m1[1]).strip()
+												if str(m1[0]).upper().startswith("UAT"): uatVer = str(m1[1]).strip()
+										#print(sitVer,uatVer)
 									objList.append(adtNum)
 									objList.append(defectType)
 									objList.append(projectName)
@@ -182,6 +191,8 @@ def parseObjList(filename):
 									objList.append(newObjType)
 									objList.append(objName)
 									objList.append(srfObjType)
+									objList.append(sitVer)
+									objList.append(uatVer)
 									objList.append(newobjUpdInfo)
 									objList.append(ownerTeam)
 									ObjListofList.append(objList)
@@ -196,6 +207,8 @@ def parseObjList(filename):
 					objList.append("NoMatch")#newObjType
 					objList.append("NoMatch") #objName
 					objList.append("") #srfObjType
+					objList.append("") #sitVer
+					objList.append("") #uatVer
 					objList.append("") #newobjUpdInfo
 					objList.append(ownerTeam)
 					ObjListofList.append(objList)
@@ -209,6 +222,8 @@ def parseObjList(filename):
 				objList.append("NoDetails")#newObjType
 				objList.append("NoDetails") #objName
 				objList.append("") #srfObjType
+				objList.append("") #sitVer
+				objList.append("") #uatVer
 				objList.append("") #newobjUpdInfo
 				objList.append(ownerTeam)
 				ObjListofList.append(objList)
@@ -216,7 +231,7 @@ def parseObjList(filename):
 		print("Total number of ADTs scanned:%i"%(rownum))
 		createObjListFile(filename,ObjListofList)
 def main():
-	print("*"*60+"\n\n\tObjects List Generator for ADT list\n\t\tversion: 0.7\n\n"+"*"*60)
+	print("*"*60+"\n\n\tObjects List Generator for ADT list\n\t\tversion: 0.8\n\n"+"*"*60)
 
 	if len(sys.argv) < 2:
 		print("Usage: %s adtlistfile.csv \nexample: %s adtlistfile.csv"%(sys.argv[0],sys.argv[0]))
