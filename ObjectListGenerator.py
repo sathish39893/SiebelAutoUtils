@@ -10,7 +10,7 @@
 '''
 
 import csv,re,os,sys
-#########
+
 def validateInputs(filename):
 	if filename != "" and os.path.exists(filename.strip("\"").strip("\'")) is False:
 		print('filename: %s does not exists'%filename)
@@ -33,7 +33,7 @@ def getRepoNonRepoType(ObjType):
 
 def getModifiedInfo(objUpdInfo):
 	ObjTypeList ={'Modified':['UPD','UPDATED','UPDATE','EDIT','MODIFIED'],
-				'New':['ADD','ADDED','NEW']
+				'New':['ADD','ADDED','NEW','CREATE','CREATED']
 				}
 	for k in ObjTypeList:
 		if k == objUpdInfo:
@@ -74,14 +74,14 @@ def getObjType(searchFor):
 				'Web Template':['WEB TEMPLATE','WEB TEMPL','WEBTEMPL'],
 				'Import Object':['IMPORT OBJECT'],
 				# non - repository
-				'List Of Values':['LOV','LOVS','DESCRIPTION','VALUE','TYPE'],
-				'Web Service':['WS','WEBSERVICE','INBOUND WS','OUTBOUND WS'],
-				'EAI DataMap':['DATAMAP','DATA MAP','DM','DATA'],
-				'Application DataMap':['APPLICATION DATAMAP','APPLICATION DATA MAP'],
+				'List Of Values':['LOV','LOVS','DESCRIPTION','VALUE','TYPE','LIST OF VALUES'],
+				'Web Service':['WS','WEBSERVICE','INBOUND WS','OUTBOUND WS','INBOUNDWS','OUTBOUNDWS'],
+				'EAI DataMap':['DATAMAP','DATA MAP','DM'],
+				'Application DataMap':['APPLICATION DATAMAP','APPLICATION DATA MAP','APPLICATIONDATAMAP'],
 				'Workflow':['WF','WORKFLOW'],
 				'Workflow Policy':['WF POLICY','WORKFLOW POLICY'],
-				'SWT Files':['SWT','SWT FILES'],
-				'JS Files':['JS FILES','JAVASCRIPT FILES','JAVA SCRIPT FILES','JS'],
+				'SWT Files':['SWT','SWT FILES','SWTFILES'],
+				'JS Files':['JS FILES','JSFILES','JAVASCRIPT FILES','JAVA SCRIPT FILES','JAVASCRIPTFILES','JAVASCRIPTFILE'],
 				'CSS Files':['CSS FILES','CSS'],
 				'Attribute Definition':['ATTRIBUTE DEFINITION','ATTRIBUTE'],
 				'Product Definition':['PRODUCT DEFINITION','PRODUCT']
@@ -153,15 +153,25 @@ def parseObjList(filename):
 							objNamelist = str(m.group(2).strip()).split("->")
 							objName = objNamelist[0].strip().strip("-").strip() #Object Name
 							if len(objNamelist) > 1: objUpdInfo = objNamelist[1].strip("-").strip()
-							for objType in objTypelist:
-								objType = objType.strip()
-								if objType == "": continue
-								newObjType = getObjType(objType)
-								##if adtNum == "8376":print(newObjType)
+							counter = 0
+							lenOfObjType = len(objTypelist)
+							skipRow = "false"
+							for counter, objType in enumerate(objTypelist):
+								if skipRow == "true": break
+								if objType.strip() == "": continue
+								newObjType = getObjType(objType.strip())
+								if newObjType is None and counter < lenOfObjType-1:  # add next word and check
+									objType = objTypelist[counter]+objTypelist[counter+1]
+									newObjType = getObjType(objType.strip())
+								if newObjType is None and counter < lenOfObjType-2: # add next word and check
+									objType = objTypelist[counter]+objTypelist[counter+1]+objTypelist[counter+2]
+									newObjType = getObjType(objType.strip())
+
 								objList = []
 								if newObjType is not None and objName !="":
 									matchFound = "true"
-									#print(matchFound,rownum)
+									skipRow = "true"
+									#print(matchFound,counter,objType,newObjType)
 									srfObjType = getRepoNonRepoType(newObjType)
 									newobjUpdInfo = getModifiedInfo(objUpdInfo)
 									if newObjType == "Workflow":objName = str(objName.split(":")[0].strip())
@@ -175,6 +185,8 @@ def parseObjList(filename):
 									objList.append(newobjUpdInfo)
 									objList.append(ownerTeam)
 									ObjListofList.append(objList)
+
+									
 				if matchFound=="false" and rownum > 0:
 					objList = []
 					objList.append(adtNum)
@@ -204,7 +216,7 @@ def parseObjList(filename):
 		print("Total number of ADTs scanned:%i"%(rownum))
 		createObjListFile(filename,ObjListofList)
 def main():
-	print("*"*60+"\n\n\tObjects List Generator for ADT list\n\t\tversion: 0.6\n\n"+"*"*60)
+	print("*"*60+"\n\n\tObjects List Generator for ADT list\n\t\tversion: 0.7\n\n"+"*"*60)
 
 	if len(sys.argv) < 2:
 		print("Usage: %s adtlistfile.csv \nexample: %s adtlistfile.csv"%(sys.argv[0],sys.argv[0]))
