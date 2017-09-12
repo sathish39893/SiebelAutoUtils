@@ -20,7 +20,8 @@ def getRepoNonRepoType(ObjType):
 	ObjTypeList ={'SRF':['Bitmap Category','Business Component','Business Object','Business Service','Class','Find','HTML Heirarchy Bitmap','Help Id','Icon Map','Integration Object',
 						'Application','Applet','Link','Menu','Message Category','Pick List','Project','Screen','Symbolic String','Table','Task Group','Toolbar','View','Web Page',
 						'Import Object'],
-				'Non-SRF':['List Of Values','Web Service','EAI DataMap','Application DataMap','Workflow','Workflow Policy','SWT Files','JS Files','CSS Files','Attribute Definition','Product Definition']
+				'Non-SRF':['List Of Values','Web Service','EAI DataMap','Application DataMap','Workflow','Workflow Policy','Workflow Policy Action','SWT Files','JS Files','CSS Files',
+						'Attribute Definition','Product Definition','PDQ','RCR','Images']
 				}
 	for k in ObjTypeList:
 		if k == ObjType:
@@ -46,14 +47,14 @@ def getModifiedInfo(objUpdInfo):
 
 def getObjType(searchFor):
 	#added below to avoid typo errors
-	ObjectList = {	'Bitmap Category':["BITMAP CATEGORY","BITMAP"],
+	ObjectList = {	'Bitmap Category':['BITMAP CATEGORY','BITMAP','BITMAPCATEGORY'],
 				'Business Component':['BUSINESS COMPONENT','BC', 'BUSCOMP'],
 				'Business Object':['BUSINESS OBJECT','BO'], 
 				'Business Service':['BUSINESS SERVICE','BS'],
 				'Class':['CLASS'],
 				'Command':['COMMAND'],
 				'Find':['FIND'],
-				'HTML Heirarchy Bitmap':['HTML HEIRARCHY BITMAP'],
+				'HTML Heirarchy Bitmap':['HTML HEIRARCHY BITMAP','HTMLHEIRARCHYBITMAP'],
 				'Help Id':['HELP ID'],
 				'Icon Map':['ICON MAP','ICON'],
 				'Integration Object':['INTEGRATION OBJECT','IO','INT OBJ'],
@@ -61,30 +62,34 @@ def getObjType(searchFor):
 				'Applet':['APPLET'],  #application and applet needs to be same sequence
 				'Link':['LINK'],
 				'Menu':['MENU'],
-				'Message Category':['MESSAGE CATEGORY'],
-				'Pick List':['PICK LIST'],
+				'Message Category':['MESSAGE CATEGORY','MESSAGECATEGORY'],
+				'Pick List':['PICK LIST','PICKLIST'],
 				'Project':['PROJECT'],
 				'Screen':['SCREEN'],
-				'Symbolic String':['SYMBOLIC STRING'],
+				'Symbolic String':['SYMBOLIC STRING','SYMBOLICSTRINGS','SYMBOLICSTRING'],
 				'Table':['TABLE'],
-				'Task Group':['TASK GROUP'],
+				'Task Group':['TASK GROUP','TASKGROUP'],
 				'Toolbar':['TOOLBAR'],
 				'View':['VIEW'],
 				'Web Page':['WEB PAGE'],
 				'Web Template':['WEB TEMPLATE','WEB TEMPL','WEBTEMPL'],
-				'Import Object':['IMPORT OBJECT'],
+				'Import Object':['IMPORT OBJECT','IMPORTOBJECT'],
 				# non - repository
 				'List Of Values':['LOV','LOVS','DESCRIPTION','VALUE','TYPE','LIST OF VALUES'],
 				'Web Service':['WS','WEBSERVICE','INBOUND WS','OUTBOUND WS','INBOUNDWS','OUTBOUNDWS'],
 				'EAI DataMap':['DATAMAP','DATA MAP','DM'],
 				'Application DataMap':['APPLICATION DATAMAP','APPLICATION DATA MAP','APPLICATIONDATAMAP'],
 				'Workflow':['WF','WORKFLOW'],
-				'Workflow Policy':['WF POLICY','WORKFLOW POLICY'],
+				'Workflow Policy':['WF POLICY','WORKFLOW POLICY','WORKFLOWPOLICY'],
+				'Workflow Policy Action':['WFPOLICYACTION','WORKFLOW POLICY ACTION','WORKFLOWPOLICYACTION','WORKFLOWPOLICYACTIONS'],
 				'SWT Files':['SWT','SWT FILES','SWTFILES'],
 				'JS Files':['JS FILES','JSFILES','JAVASCRIPT FILES','JAVA SCRIPT FILES','JAVASCRIPTFILES','JAVASCRIPTFILE'],
 				'CSS Files':['CSS FILES','CSS'],
 				'Attribute Definition':['ATTRIBUTE DEFINITION','ATTRIBUTE'],
-				'Product Definition':['PRODUCT DEFINITION','PRODUCT']
+				'Product Definition':['PRODUCT DEFINITION','PRODUCT'],
+				'PDQ':['PDQ','PREDEFINEDQUERIES','PRE DEFINED QUERIES'],
+				'RCR':['RCR','REPEATING COMPONENT REQUESTS','REPEATING COMPONENT REQUEST','REPEATINGCOMPONENTREQUEST','REPEATINGCOMPONENTREQUESTS'],
+				'Images':['IMAGE','IMAGES']
 			}
 	searchFor = re.sub(r'[^a-zA-Z]','',searchFor)
 	for k in ObjectList:
@@ -149,7 +154,9 @@ def parseObjList(filename):
 						pattern = "(.*?\s*):(\s*.*?$)"    ## pattern used for matching
 						m = re.search(pattern,line)
 						if m is not None:
-							objTypelist = str(m.group(1).strip()).split(" ")
+							objTypelist = str(m.group(1).strip())
+							objTypelist = re.sub(r'[^a-zA-Z]','',objTypelist)
+							objTypelist = objTypelist.split(" ")
 							objNamelist = str(m.group(2).strip()).split("->")
 							objName = objNamelist[0].strip().strip("-").strip() #Object Name
 							if len(objNamelist) > 1: objUpdInfo = objNamelist[1].strip("-").strip()
@@ -166,7 +173,7 @@ def parseObjList(filename):
 								if newObjType is None and counter < lenOfObjType-2: # add next word and check
 									objType = objTypelist[counter]+objTypelist[counter+1]+objTypelist[counter+2]
 									newObjType = getObjType(objType.strip())
-
+								
 								objList = []
 								if newObjType is not None and objName !="":
 									matchFound = "true"
@@ -183,6 +190,7 @@ def parseObjList(filename):
 											if m1 is not None:
 												if str(m1[0]).upper().startswith("SIT"): sitVer = str(m1[1]).strip()
 												if str(m1[0]).upper().startswith("UAT"): uatVer = str(m1[1]).strip()
+										objName = re.sub(pattern1,'',objName)  # remove versions wf name
 										#print(sitVer,uatVer)
 									objList.append(adtNum)
 									objList.append(defectType)
@@ -231,7 +239,7 @@ def parseObjList(filename):
 		print("Total number of ADTs scanned:%i"%(rownum))
 		createObjListFile(filename,ObjListofList)
 def main():
-	print("*"*60+"\n\n\tObjects List Generator for ADT list\n\t\tversion: 0.8\n\n"+"*"*60)
+	print("*"*60+"\n\n\tObjects List Generator for ADT list\n\t\tversion: 1.0\n\n"+"*"*60)
 
 	if len(sys.argv) < 2:
 		print("Usage: %s adtlistfile.csv \nexample: %s adtlistfile.csv"%(sys.argv[0],sys.argv[0]))
