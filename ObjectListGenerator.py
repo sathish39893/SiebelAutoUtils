@@ -105,6 +105,8 @@ def findColumn(element,findToList):
 	try:
 		return findToList.index(element)
 	except ValueError:
+		print("provided csv file header doesnot contain column: %s"%element);
+		sys.exit();
 		return None
 		
 def createObjListFile(filename,rowTowrite):
@@ -135,15 +137,14 @@ def parseObjList(filename):
 				IdColumn = findColumn("Id",row)
 				ObjListColumn = findColumn("Resolution ADT",row)
 				defectTypeColumn = findColumn("Defect Type",row)
-				projectNameColumn = findColumn("Custom 2_ Defect",row)
+				projectNameColumn = findColumn("Project",row) #New: Project, Old--Custom 2_ Defect
 				ownerNameColumn = findColumn("Owned By",row)
-				ownerTeamColumn = findColumn('Custom 3_ Defect',row)
+				ownerTeamColumn = findColumn("Owning Team",row) #New:Owning Team,Old- Custom 3_ Defect
 				
-				#print(IdColumn,ObjListColumn)
 			adtObjList = row[ObjListColumn].strip()
 			adtNum = row[IdColumn].strip()
 			if defectTypeColumn is not None: defectType = row[defectTypeColumn]
-			projectName = row[projectNameColumn]
+			if projectNameColumn is not None: projectName = row[projectNameColumn]
 			if ownerNameColumn is not None: ownerName = row[ownerNameColumn]
 			if ownerTeamColumn is not None: ownerTeam = row[ownerTeamColumn]
 			
@@ -239,7 +240,7 @@ def parseObjList(filename):
 		print("Total number of ADTs scanned:%i"%(rownum))
 		createObjListFile(filename,ObjListofList)
 def main():
-	print("*"*60+"\n\n\tObjects List Generator for ADT list\n\t\tversion: 1.0\n\n"+"*"*60)
+	print("*"*60+"\n\n\tObjects List Generator for ADT list\n\t\tversion: 1.1\n\n"+"*"*60)
 
 	if len(sys.argv) < 2:
 		print("Usage: %s adtlistfile.csv \nexample: %s adtlistfile.csv"%(sys.argv[0],sys.argv[0]))
