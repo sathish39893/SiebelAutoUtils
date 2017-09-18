@@ -240,10 +240,15 @@ def parseObjList(filename):
 		print("Total number of ADTs scanned:%i"%(rownum))
 		createObjListFile(filename,ObjListofList)
 def main():
-	print("*"*60+"\n\n\tObjects List Generator for ADT list\n\t\tversion: 1.1\n\n"+"*"*60)
+	print("*"*60+"\n\n\tObjects List Generator for ADT list\n\t\tversion: 1.2\n\n"+"*"*60)
 
 	if len(sys.argv) < 2:
 		print("Usage: %s adtlistfile.csv \nexample: %s adtlistfile.csv"%(sys.argv[0],sys.argv[0]))
+		sys.exit()
+	elif sys.argv[1].lower() in ("-h","-help","/h","/help"):
+		print("Usage: %s adtlistfile.csv "%(sys.argv[0]))
+		print("The input csv file should contain at least below headers in any of the order for this tool to work.")
+		print("'Id','Resolution ADT','Defect Type','Project','Owned By','Owning Team'")
 		sys.exit()
 	else:
 		adtlistfile = sys.argv[1]
