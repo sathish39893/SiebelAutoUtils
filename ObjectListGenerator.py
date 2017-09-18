@@ -20,7 +20,7 @@ def getRepoNonRepoType(ObjType):
 	ObjTypeList ={'SRF':['Bitmap Category','Business Component','Business Object','Business Service','Class','Find','HTML Heirarchy Bitmap','Help Id','Icon Map','Integration Object',
 						'Application','Applet','Link','Menu','Message Category','Pick List','Project','Screen','Symbolic String','Table','Task Group','Toolbar','View','Web Page',
 						'Import Object'],
-				'Non-SRF':['List Of Values','Web Service','EAI DataMap','Application DataMap','Workflow','Workflow Policy','Workflow Policy Action','SWT Files','JS Files','CSS Files',
+				'Non-SRF':['List Of Values','OTE List Of Values','Web Service','EAI DataMap','Application DataMap','Workflow','Workflow Policy','Workflow Policy Action','SWT Files','JS Files','CSS Files',
 						'Attribute Definition','Product Definition','PDQ','RCR','Images']
 				}
 	for k in ObjTypeList:
@@ -48,16 +48,16 @@ def getModifiedInfo(objUpdInfo):
 def getObjType(searchFor):
 	#added below to avoid typo errors
 	ObjectList = {	'Bitmap Category':['BITMAP CATEGORY','BITMAP','BITMAPCATEGORY'],
-				'Business Component':['BUSINESS COMPONENT','BC', 'BUSCOMP'],
-				'Business Object':['BUSINESS OBJECT','BO'], 
-				'Business Service':['BUSINESS SERVICE','BS'],
+				'Business Component':['BUSINESS COMPONENT','BC', 'BUSCOMP','BUSINESSCOMPONENT'],
+				'Business Object':['BUSINESS OBJECT','BO','BUSINESSOBJECT'], 
+				'Business Service':['BUSINESS SERVICE','BS','BUSINESSSERVICE'],
 				'Class':['CLASS'],
 				'Command':['COMMAND'],
 				'Find':['FIND'],
 				'HTML Heirarchy Bitmap':['HTML HEIRARCHY BITMAP','HTMLHEIRARCHYBITMAP'],
 				'Help Id':['HELP ID'],
 				'Icon Map':['ICON MAP','ICON'],
-				'Integration Object':['INTEGRATION OBJECT','IO','INT OBJ'],
+				'Integration Object':['INTEGRATION OBJECT','INTEGRATIONOBJECT','IO','INT OBJ'],
 				'Application':['APPLICATION','APP','APPL'],
 				'Applet':['APPLET'],  #application and applet needs to be same sequence
 				'Link':['LINK'],
@@ -71,11 +71,12 @@ def getObjType(searchFor):
 				'Task Group':['TASK GROUP','TASKGROUP'],
 				'Toolbar':['TOOLBAR'],
 				'View':['VIEW'],
-				'Web Page':['WEB PAGE'],
-				'Web Template':['WEB TEMPLATE','WEB TEMPL','WEBTEMPL'],
+				'Web Page':['WEB PAGE','WEBPAGE'],
+				'Web Template':['WEB TEMPLATE','WEB TEMPL','WEBTEMPL','WEBTEMPLATE','WEBTEMPLATES'],
 				'Import Object':['IMPORT OBJECT','IMPORTOBJECT'],
 				# non - repository
-				'List Of Values':['LOV','LOVS','DESCRIPTION','VALUE','TYPE','LIST OF VALUES'],
+				'List Of Values':['LOV','LOVS','LIST OF VALUES','LISTOFVALUES'],
+				'OTE List Of Values':['OTELOV','OTELOVS','OTE LIST OF VALUES','OTELISTOFVALUES'],
 				'Web Service':['WS','WEBSERVICE','INBOUND WS','OUTBOUND WS','INBOUNDWS','OUTBOUNDWS'],
 				'EAI DataMap':['DATAMAP','DATA MAP','DM'],
 				'Application DataMap':['APPLICATION DATAMAP','APPLICATION DATA MAP','APPLICATIONDATAMAP'],
@@ -113,7 +114,7 @@ def createObjListFile(filename,rowTowrite):
 	try:
 		ObjListFileName = str(filename+"_ObjectList.csv")
 		with open(ObjListFileName, 'w',newline='',encoding="utf-16") as ObjListFile:
-			headerList = ['Id','Defect Type','Project','Owner','Object Type','Object Name','SRF/Non-SRF','SIT','UAT','New/Modified','Owning Team']
+			headerList = ['Id','Defect Type','Project','Owner','Object Type','Object Name','SRF/Non-SRF','SIT','UAT','New/Modified']
 			ObjListWriter = csv.writer(ObjListFile, delimiter='\t', quotechar='"', quoting=csv.QUOTE_ALL) #QUOTE_MINIMAL
 			ObjListWriter.writerow(headerList)
 			for row in rowTowrite:
@@ -127,7 +128,7 @@ def parseObjList(filename):
 	
 	with open(filename,encoding="utf-16") as csvfile:
 		adtreader = csv.reader(csvfile,dialect="excel",delimiter='\t',quotechar='"')
-		IdColumn,ObjListColumn,defectType,projectName,ownerName,ownerTeam,objName,objUpdInfo = "","","","","","","",""
+		IdColumn,ObjListColumn,defectType,projectName,ownerName,objName,objUpdInfo = "","","","","","",""
 		ObjListofList = []
 		objList = []
 		for rownum,row in enumerate(adtreader):
@@ -139,14 +140,14 @@ def parseObjList(filename):
 				defectTypeColumn = findColumn("Defect Type",row)
 				projectNameColumn = findColumn("Project",row) #New: Project, Old--Custom 2_ Defect
 				ownerNameColumn = findColumn("Owned By",row)
-				ownerTeamColumn = findColumn("Owning Team",row) #New:Owning Team,Old- Custom 3_ Defect
+				#ownerTeamColumn = findColumn("Owning Team",row) #New:Owning Team,Old- Custom 3_ Defect
 				
 			adtObjList = row[ObjListColumn].strip()
 			adtNum = row[IdColumn].strip()
 			if defectTypeColumn is not None: defectType = row[defectTypeColumn]
 			if projectNameColumn is not None: projectName = row[projectNameColumn]
 			if ownerNameColumn is not None: ownerName = row[ownerNameColumn]
-			if ownerTeamColumn is not None: ownerTeam = row[ownerTeamColumn]
+			#if ownerTeamColumn is not None: ownerTeam = row[ownerTeamColumn]
 			
 			if adtNum != "" and adtObjList !="" and rownum > 0:
 				objListArr = adtObjList.split("\n")
@@ -203,7 +204,7 @@ def parseObjList(filename):
 									objList.append(sitVer)
 									objList.append(uatVer)
 									objList.append(newobjUpdInfo)
-									objList.append(ownerTeam)
+									#objList.append(ownerTeam)
 									ObjListofList.append(objList)
 
 									
@@ -219,7 +220,7 @@ def parseObjList(filename):
 					objList.append("") #sitVer
 					objList.append("") #uatVer
 					objList.append("") #newobjUpdInfo
-					objList.append(ownerTeam)
+					#objList.append(ownerTeam)
 					ObjListofList.append(objList)
 
 			elif adtObjList == "" and rownum > 0:
@@ -234,7 +235,7 @@ def parseObjList(filename):
 				objList.append("") #sitVer
 				objList.append("") #uatVer
 				objList.append("") #newobjUpdInfo
-				objList.append(ownerTeam)
+				#objList.append(ownerTeam)
 				ObjListofList.append(objList)
 
 		print("Total number of ADTs scanned:%i"%(rownum))
