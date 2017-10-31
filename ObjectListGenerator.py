@@ -1,5 +1,5 @@
 '''
-	Object list generator for ADT tool (version 0.4)
+	Object list generator for ADT tool (version 1.4)
 	Author: Sathish.panthagani@accenture.com
 	
 	this tool uses the adt tool query export csv file and parses 
@@ -21,7 +21,7 @@ def getRepoNonRepoType(ObjType):
 						'Application','Applet','Link','Menu','Message Category','Pick List','Project','Screen','Symbolic String','Table','Task Group','Toolbar','View','Web Page',
 						'Import Object'],
 				'Non-SRF':['List Of Values','OTE List Of Values','Web Service','EAI DataMap','Application DataMap','Workflow','Workflow Policy','Workflow Policy Action','SWT Files','JS Files','CSS Files',
-						'Attribute Definition','Product Definition','PDQ','RCR','Images']
+						'Attribute Definition','Product Definition','PDQ','RCR','Images','Application Business Service','XDO Files','DB Package']
 				}
 	for k in ObjTypeList:
 		if k == ObjType:
@@ -55,8 +55,8 @@ def getObjType(searchFor):
 				'Command':['COMMAND'],
 				'Find':['FIND'],
 				'HTML Heirarchy Bitmap':['HTML HEIRARCHY BITMAP','HTMLHEIRARCHYBITMAP'],
-				'Help Id':['HELP ID'],
-				'Icon Map':['ICON MAP','ICON'],
+				'Help Id':['HELP ID','HELPID'],
+				'Icon Map':['ICON MAP','ICON','ICONMAP'],
 				'Integration Object':['INTEGRATION OBJECT','INTEGRATIONOBJECT','IO','INT OBJ'],
 				'Application':['APPLICATION','APP','APPL'],
 				'Applet':['APPLET'],  #application and applet needs to be same sequence
@@ -75,6 +75,7 @@ def getObjType(searchFor):
 				'Web Template':['WEB TEMPLATE','WEB TEMPL','WEBTEMPL','WEBTEMPLATE','WEBTEMPLATES'],
 				'Import Object':['IMPORT OBJECT','IMPORTOBJECT'],
 				# non - repository
+				'Application Business Service':['APPLICATIONBS','ONLINEBS','APPLICATIONBUSINESSSERVICE','ONLINEBUSINESSSERVICE'],
 				'List Of Values':['LOV','LOVS','LIST OF VALUES','LISTOFVALUES'],
 				'OTE List Of Values':['OTELOV','OTELOVS','OTE LIST OF VALUES','OTELISTOFVALUES'],
 				'Web Service':['WS','WEBSERVICE','INBOUND WS','OUTBOUND WS','INBOUNDWS','OUTBOUNDWS'],
@@ -90,7 +91,9 @@ def getObjType(searchFor):
 				'Product Definition':['PRODUCT DEFINITION','PRODUCT'],
 				'PDQ':['PDQ','PREDEFINEDQUERIES','PRE DEFINED QUERIES'],
 				'RCR':['RCR','REPEATING COMPONENT REQUESTS','REPEATING COMPONENT REQUEST','REPEATINGCOMPONENTREQUEST','REPEATINGCOMPONENTREQUESTS'],
-				'Images':['IMAGE','IMAGES']
+				'Images':['IMAGE','IMAGES','IMAGEFILE','IMAGEFILES'],
+				'XDO Files':['XDO','XDOFILES','XDOFILE'],
+				'DB Package':['DBPACKAGE','PACKAGE']
 			}
 	searchFor = re.sub(r'[^a-zA-Z]','',searchFor)
 	for k in ObjectList:
@@ -114,7 +117,7 @@ def createObjListFile(filename,rowTowrite):
 	try:
 		ObjListFileName = str(filename+"_ObjectList.csv")
 		with open(ObjListFileName, 'w',newline='',encoding="utf-16") as ObjListFile:
-			headerList = ['Id','Defect Type','Project','Owner','Object Type','Object Name','SRF/Non-SRF','SIT','UAT','New/Modified']
+			headerList = ['Id','Defect Type','Project','Owner','Object Type','Object Name','SRF/Non-SRF','SIT','UAT','New/Modified','LCTBuilt']
 			ObjListWriter = csv.writer(ObjListFile, delimiter='\t', quotechar='"', quoting=csv.QUOTE_ALL) #QUOTE_MINIMAL
 			ObjListWriter.writerow(headerList)
 			for row in rowTowrite:
@@ -140,14 +143,14 @@ def parseObjList(filename):
 				defectTypeColumn = findColumn("Defect Type",row)
 				projectNameColumn = findColumn("Project",row) #New: Project, Old--Custom 2_ Defect
 				ownerNameColumn = findColumn("Owned By",row)
-				#ownerTeamColumn = findColumn("Owning Team",row) #New:Owning Team,Old- Custom 3_ Defect
+				ownerTeamColumn = findColumn("LCTBuiltList",row) #New:Owning Team,Old- Custom 3_ Defect
 				
 			adtObjList = row[ObjListColumn].strip()
 			adtNum = row[IdColumn].strip()
 			if defectTypeColumn is not None: defectType = row[defectTypeColumn]
 			if projectNameColumn is not None: projectName = row[projectNameColumn]
 			if ownerNameColumn is not None: ownerName = row[ownerNameColumn]
-			#if ownerTeamColumn is not None: ownerTeam = row[ownerTeamColumn]
+			if ownerTeamColumn is not None: ownerTeam = row[ownerTeamColumn]
 			
 			if adtNum != "" and adtObjList !="" and rownum > 0:
 				objListArr = adtObjList.split("\n")
@@ -204,7 +207,7 @@ def parseObjList(filename):
 									objList.append(sitVer)
 									objList.append(uatVer)
 									objList.append(newobjUpdInfo)
-									#objList.append(ownerTeam)
+									objList.append(ownerTeam)
 									ObjListofList.append(objList)
 
 									
@@ -220,7 +223,7 @@ def parseObjList(filename):
 					objList.append("") #sitVer
 					objList.append("") #uatVer
 					objList.append("") #newobjUpdInfo
-					#objList.append(ownerTeam)
+					objList.append(ownerTeam)
 					ObjListofList.append(objList)
 
 			elif adtObjList == "" and rownum > 0:
@@ -235,13 +238,13 @@ def parseObjList(filename):
 				objList.append("") #sitVer
 				objList.append("") #uatVer
 				objList.append("") #newobjUpdInfo
-				#objList.append(ownerTeam)
+				objList.append(ownerTeam)
 				ObjListofList.append(objList)
 
 		print("Total number of ADTs scanned:%i"%(rownum))
 		createObjListFile(filename,ObjListofList)
 def main():
-	print("*"*60+"\n\n\tObjects List Generator for ADT list\n\t\tversion: 1.2\n\n"+"*"*60)
+	print("*"*60+"\n\n\tObjects List Generator for ADT list\n\t\tversion: 1.4\n\n"+"*"*60)
 
 	if len(sys.argv) < 2:
 		print("Usage: %s adtlistfile.csv \nexample: %s adtlistfile.csv"%(sys.argv[0],sys.argv[0]))
